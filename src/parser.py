@@ -28,6 +28,10 @@ class Note:
     is_archived: bool
     is_trashed: bool 
 
+    def to_text(self) -> str:
+        # a class to convert the Note object to a string for embedding
+        return f"{self.title}\n\n{self.text}"
+
 class KeepParser:
     def __init__(self, keep_directory: str | Path):
         self.keep_dir = Path(keep_directory)
