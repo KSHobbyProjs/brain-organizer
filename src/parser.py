@@ -6,6 +6,28 @@ import json
 import datetime
 from dataclasses import dataclass
 
+def parse_keep_timestamp(timestamp_usec: str | None) -> datetime.datetime | None:
+    if timestamp_usec is None:
+        return None
+
+    return datetime.date.fromtimestamp(
+            int(timestamp_usec) / 1_000_000
+            )
+
+@dataclass
+class Note:
+    """
+    Class for storing data and metadata important to each note.
+    """
+    title: str
+    text: str
+    created_time: datetime.datetime | None
+    edited_time: datetime.datetime | None
+    labels: list[str]
+    is_pinned: bool
+    is_archived: bool
+    is_trashed: bool 
+
 class KeepParser:
     def __init__(self, keep_directory: str | Path):
         self.keep_dir = Path(keep_directory)
@@ -36,13 +58,13 @@ class KeepParser:
 
     @staticmethod
     def create_note_from_keepjson(keepjson: Path) -> Note:
-       with keepjson.open("r", encoding="utf-8") as f:
-           keepjson_data = json.load(f)
+        with keepjson.open("r", encoding="utf-8") as f:
+            keepjson_data = json.load(f)
 
         title = keepjson_data.get("title", "")
         text = keepjson_data.get("textContent", "")
-        created_time = self.parse_keep_timestamp(keepjson_data.get("createdTimestampUsec"))
-        edited_time = self.parse_keep_timestamp(keepjson_data.get("userEditedTimestampUsec"))
+        created_time = parse_keep_timestamp(keepjson_data.get("createdTimestampUsec"))
+        edited_time = parse_keep_timestamp(keepjson_data.get("userEditedTimestampUsec"))
         labels = [label["name"] for label in keepjson_data.get("labels", [])]
         is_trashed = keepjson_data.get("isTrashed", False)
         is_pinned = keepjson_data.get("isPinned", False)
@@ -60,26 +82,3 @@ class KeepParser:
                 )
         return note
 
-    @staticmethod
-    def _parse_keep_timestamp(timestamp_usec: str | None) -> datetime | None:
-        if timestamp_usec is None:
-            return None
-
-        return datetime.fromtimestamp(
-                int(timestamp_usec) / 1_000_000
-                tz="UTC"
-                )
-
-@dataclass
-class Note:
-    """
-    Class for storing data and metadata important to each note.
-    """
-    title: str
-    text: str
-    created_time: datetime | None
-    edited_time: datetime | None
-    labels: list[str]
-    is_pinned: bool
-    is_archived: bool
-    is_trashed: bool 
