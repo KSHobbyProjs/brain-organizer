@@ -43,7 +43,14 @@ def cosine_similarity(query: np.ndarray, embeddings: np.ndarray) -> np.ndarray:
 class SearchResult:
     note: Note
     score: float
-    index: int
+
+    def to_preview(self) -> str:
+        preview = (
+                f"{self.score:.3f}\n"
+                f"{self.note.to_preview()}"
+                   )
+        return preview
+        
 
 class SemanticSearcher: 
     def __init__(self, embeddings: np.ndarray, notes: list[Note]):
@@ -64,8 +71,7 @@ class SemanticSearcher:
         retrieved_notes = [
                 SearchResult(
                         note=self.notes[idx],
-                        score=scores[idx],
-                        index=idx
+                        score=scores[idx]
                         )
                 for idx in top_k_idx
                 ]

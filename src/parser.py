@@ -32,6 +32,27 @@ class Note:
         # a class to convert the Note object to a string for embedding
         return f"Title: {self.title}\n\n{self.text}"
 
+    def to_preview(self) -> str:
+        title = f"{self.title}"
+        date = f"{self.created_time}"
+        body = f"{self.text}"
+        
+        # truncate the body text to chars and 
+        # cut off last word of body in case it's incomplete
+        chars = 250 # this marks the length of the note body in the console
+        if len(body) > chars:
+            body = body[:chars]
+            if " " in body:
+                body = body.rsplit(" ", 1)[0]
+            body += "..."
+        
+        preview = (
+                f"{title}\n"
+                f"Date: {date}\n"
+                f"{body}"
+                    )
+        return preview        
+
 class KeepParser:
     def __init__(self, keep_directory: str | Path):
         self.keep_dir = Path(keep_directory)

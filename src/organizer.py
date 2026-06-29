@@ -12,16 +12,17 @@ from .search import SemanticSearcher
 
 import numpy as np
 from pathlib import Path
+from sentence_transformers import SentenceTransformer
 
 class BrainOrganizer:
     def __init__(self, notes_dir: str | Path, model_name: str):
         # sentence transformer model
-        self.model = model
+        self.model_name = model_name
         self.notes_dir = notes_dir
 
         # helper instances
         self.parser = KeepParser(notes_dir)
-        self.embedder = Embedder(SentenceTransformers(model, device='cuda'))
+        self.embedder = Embedder(SentenceTransformer(model_name, device='cuda'))
         self.searcher: SemanticSearcher | None = None
 
         # notes and embeddings (unpopulated until and `embed_from` method is called)
@@ -29,6 +30,7 @@ class BrainOrganizer:
         self.embeddings: np.ndarray | None = None
   
     # load brain (parse and embed) from Keep notes
+    @classmethod
     def from_keep_directory(cls, 
                             keep_dir: str | Path,
                             model_name: str="sentence-transformers/all-MiniLM-L6-v2"
@@ -36,16 +38,16 @@ class BrainOrganizer:
         brain = cls(keep_dir, model_name)
 
         # parse keep notes 
-        self.parser.get_keepjson_files()
-        notes = self.parser.create_notes()
-        self.notes = notes
+        brain.parser.get_keepjson_files()
+        notes = brain.parser.create_notes()
+        brain.notes = notes
 
         # embed keep notes using sentence transformer model
-        embeddings = self.embedder.embed_many([note.to_text() for note in notes])
-        self.embeddings = embeddings
+        embeddings = brain.embedder.embed_many([note.to_text() for note in notes])
+        brain.embeddings = embeddings
 
         # create searcher
-        self.searcher = SemanticSearcher(self.embeddings, self.notes)
+        brain.searcher = SemanticSearcher(brain.embeddings, brain.notes)
 
         # create clusterer
         # TODO 
