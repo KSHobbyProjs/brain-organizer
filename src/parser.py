@@ -30,13 +30,13 @@ class Note:
 
     def to_text(self) -> str:
         # a class to convert the Note object to a string for embedding
-        return f"{self.title}\n\n{self.text}"
+        return f"Title: {self.title}\n\n{self.text}"
 
 class KeepParser:
     def __init__(self, keep_directory: str | Path):
         self.keep_dir = Path(keep_directory)
-        self.keepjson_files = []
-        self.notes = []
+        self.keepjson_files: list[Path] = []
+        self.notes: list[Note] = []
 
         # fail early if path given isn't a directory
         if not self.keep_dir.is_dir():
