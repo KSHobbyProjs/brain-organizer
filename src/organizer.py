@@ -8,7 +8,8 @@
 
 from .parser import KeepParser, Note
 from .embedder import Embedder  
-from .search import SemanticSearcher
+from .search import SemanticSearcher, SearchResult
+from .clustering import Clusterer, ClusterResult
 
 import numpy as np
 from pathlib import Path
@@ -24,6 +25,7 @@ class BrainOrganizer:
         self.parser = KeepParser(notes_dir)
         self.embedder = Embedder(SentenceTransformer(model_name, device='cuda'))
         self.searcher: SemanticSearcher | None = None
+        self.clusterer: Clusterer | None = None
 
         # notes and embeddings (unpopulated until and `embed_from` method is called)
         self.notes: list[Note] = []
@@ -50,21 +52,23 @@ class BrainOrganizer:
         brain.searcher = SemanticSearcher(brain.embeddings, brain.notes)
 
         # create clusterer
-        # TODO 
+        brain.clusterer = Clusterer(brain.embeddings, brain.notes)
 
         # create timeline creator
         # TODO
         return brain
 
     # tool methods
-    def search_notes(self, query: str, k: int=1):
+    def search_notes(self, query: str, k: int=1) -> list[SearchResult]:
         # search notes for best match to query
         embedded_query = self.embedder.embed(query)
         search_results = self.searcher.search(embedded_query, k=k)
         return search_results
 
-    def cluster_notes(self):
-        raise NotImplementedError
-
+    def cluster_notes(self, num_clusters: int=5) -> dict[int, ClusterResult]:
+        # cluster embeddings into `num_clusters` clusters
+        clusters = self.clusterer.cluster(num_clusters)
+        return clusters
+        
     def timeline(self):
         raise NotImplementedError

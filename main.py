@@ -26,7 +26,7 @@ class BrainCLI:
         self.console = rich.console.Console()
         self.mode = Mode.QUERY
  
-    def handle_commands(self, line: str) -> int:
+    def handle_commands(self, line: str) -> CmdResult:
         """ Returns 0, 1, 2 after executing command """
         cmd, *args = line[1:].strip().split(" ", 1)
         arg = args[0] if args else ""
@@ -76,7 +76,13 @@ class BrainCLI:
                     search_results = self.brain.search_notes(line, self.top_k)
                     self.print_results(search_results)
                 elif self.mode == Mode.CLUSTER:
-                    self.console.print("[yellow]Cluster mode not supported yet[/yellow]")
+                    try:
+                        num_clusters = int(line)
+                    except ValueError:
+                        self.console.print(f"[yellow]{line} cannot be converted to type int[/yellow]")
+                        continue
+                    clusters = self.brain.cluster_notes(num_clusters)
+                    self.print_results(clusters.values())
                 elif self.mode == Mode.TIMELINE:
                     self.console.print("[yellow]Timeline mode not supported yet[/yellow]")
                     
@@ -93,6 +99,7 @@ def main():
             )
     parser.add_argument('directory', type=str)
     parser.add_argument('-q', '--query', type=str)
+    parser.add_argument('-c', '--cluster', type=int)
     parser.add_argument('-k', '--top-k', type=int, default=5)
     parser.add_argument('-m', '--model-name', type=str, default='sentence-transformers/all-MiniLM-L6-v2')
     
@@ -106,6 +113,9 @@ def main():
     if args.query:
         search_results = brain.search_notes(args.query, args.top_k)
         brain_cli.print_results(search_results)
+    elif args.cluster:
+        clusters = brain.cluster_notes(args.cluster)
+        brain_cli.print_results(clusters.values())
     else:
         brain_cli.repl()
 
