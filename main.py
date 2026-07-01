@@ -29,6 +29,7 @@ class BrainCLI:
                 "query" : self.do_query,
                 "cluster" : self.do_cluster,
                 "visualize": self.do_visualize,
+                "timeline": self.do_timeline,
 
                 "clear" : self.do_clear,
                 "cls" : self.do_clear,
@@ -56,6 +57,11 @@ class BrainCLI:
 
         cluster_results: ClusterResult = self.brain.cluster_notes(num_clusters)
         visualizer.plot_clusters(cluster_results, dim)
+        return CmdResult.CONTINUE
+
+    def do_timeline(self):
+        notes = self.brain.get_notes()
+        visualizer.plot_timeline(notes)
         return CmdResult.CONTINUE
 
     def do_clear(self, *args) -> CmdResult:
@@ -124,6 +130,7 @@ def main():
     parser.add_argument('-v', '--visualize', type=int)
     parser.add_argument('-k', '--top-k', type=int, default=5)
     parser.add_argument('-m', '--model-name', type=str, default='sentence-transformers/all-MiniLM-L6-v2')
+    parser.add_argument('-t', '--timeline', action='store_true')
     
     args = parser.parse_args()
     brain = BrainOrganizer.from_keep_directory(args.directory, args.model_name)
@@ -141,6 +148,9 @@ def main():
     elif args.visualize:
         clusters = brain.cluster_notes(args.visualize)
         visualizer.plot_clusters(clusters)
+    elif args.timeline:
+        notes = brain.notes
+        visualizer.plot_timeline(notes)
     else:
         brain_cli.repl()
 

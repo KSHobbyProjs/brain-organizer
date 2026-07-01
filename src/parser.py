@@ -21,8 +21,8 @@ class Note:
     """
     title: str
     text: str
-    created_time: datetime.datetime | None
-    edited_time: datetime.datetime | None
+    created_time: datetime.date | None
+    edited_time: datetime.date | None
     labels: list[str]
     is_pinned: bool
     is_archived: bool
@@ -31,6 +31,9 @@ class Note:
     def to_text(self) -> str:
         # a class to convert the Note object to a string for embedding
         return f"Title: {self.title}\n\n{self.text}"
+
+    def get_created_time(self) -> datetime.date:
+        return self.created_time
 
     def to_preview(self) -> str:
         title = f"{self.title}"

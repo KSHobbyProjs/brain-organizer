@@ -73,3 +73,6 @@ class BrainOrganizer:
         # cluster embeddings into `num_clusters` clusters
         clusters = self.clusterer.cluster(num_clusters)
         return clusters 
+
+    def get_notes(self) -> list[Note]:
+        return self.notes

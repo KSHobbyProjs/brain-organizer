@@ -7,6 +7,7 @@ from .clustering import ClusterResult
 
 import numpy as np
 from sklearn.decomposition import PCA
+from datetime import datetime
 
 import matplotlib
 matplotlib.use('TkAgg')
@@ -28,6 +29,10 @@ def plot_clusters(clusters: ClusterResult, dim: int=2) -> None:
     ax.scatter(*z, c=cluster_idx)
     plt.show()
     
-def plot_timeline():
-    raise NotImplementedError
+def plot_timeline(notes: list[Note]):
+    times = [note.get_created_time() for note in notes]
+
+    fig, ax = plt.subplots()
+    ax.hist(times, bins=20, rwidth=.9)
+    plt.show()
 
