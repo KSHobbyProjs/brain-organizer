@@ -13,8 +13,15 @@ class ClusterResult:
 
     def get_ordered_embeddings(self) -> np.ndarray:
         """Collapses dictionary for easier parsing in visualizer.py"""
-        cluster_embeddings = np.concatenate([embedding[1] for embedding in self.cluster_notes.values()])
-        return cluster_embeddings    
+        # compute idx array mapping each embedding to its cluster; shape (num_embeddings,)
+        idx = np.concatenate([
+                        [cluster_num]*len(cluster_embedding[1]) 
+                        for cluster_num, cluster_embedding
+                        in self.cluster_notes.items() 
+                    ])         
+        # collapse embeddings along first axis
+        cluster_embeddings = np.concatenate([embedding[1] for embedding in self.cluster_notes.values()]) # concatenate embedding matrix
+        return idx, cluster_embeddings    
             
 
     def to_preview(self) -> str:

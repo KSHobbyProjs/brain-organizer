@@ -7,6 +7,7 @@ import rich.console, rich.rule
 from enum import Enum
 
 from src.organizer import BrainOrganizer
+import src.visualizer as visualizer
 
 # only used for type hints
 from src.search import SearchResult
@@ -27,6 +28,7 @@ class BrainCLI:
         self.commands = {
                 "query" : self.do_query,
                 "cluster" : self.do_cluster,
+                "visualize": self.do_visualize,
 
                 "clear" : self.do_clear,
                 "cls" : self.do_clear,
@@ -46,6 +48,14 @@ class BrainCLI:
         num_clusters = int(num_clusters)
         cluster_results: ClusterResult = self.brain.cluster_notes(num_clusters)
         self.print_cluster_results(cluster_results)
+        return CmdResult.CONTINUE
+
+    def do_visualize(self, num_clusters: str='5', dim: str='2') -> CmdResult:
+        num_clusters = int(num_clusters)
+        dim = int(dim)
+
+        cluster_results: ClusterResult = self.brain.cluster_notes(num_clusters)
+        visualizer.plot_clusters(cluster_results, dim)
         return CmdResult.CONTINUE
 
     def do_clear(self, *args) -> CmdResult:
@@ -111,6 +121,7 @@ def main():
     parser.add_argument('directory', type=str)
     parser.add_argument('-q', '--query', type=str)
     parser.add_argument('-c', '--cluster', type=int)
+    parser.add_argument('-v', '--visualize', type=int)
     parser.add_argument('-k', '--top-k', type=int, default=5)
     parser.add_argument('-m', '--model-name', type=str, default='sentence-transformers/all-MiniLM-L6-v2')
     
@@ -127,6 +138,9 @@ def main():
     elif args.cluster:
         clusters = brain.cluster_notes(args.cluster)
         brain_cli.print_cluster_results(clusters)
+    elif args.visualize:
+        clusters = brain.cluster_notes(args.visualize)
+        visualizer.plot_clusters(clusters)
     else:
         brain_cli.repl()
 

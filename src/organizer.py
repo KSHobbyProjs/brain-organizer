@@ -1,10 +1,16 @@
 # organizer.py
-# A module to coordinate the pieces of the project:
-# (1) parse and load notes
-# (2) embed notes
-# (3) search notes with query
-# (4) cluster notes
-# (5) TODO: timeline
+"""
+A module to coordinate the pieces of the project:
+ (1) Loading notes from sources like Keep and parsing them into a domain object (Note)
+ (2) Embedding Notes
+ (3) Semantic Searching 
+ (4) Clustering
+
+Semantic searching and clustering both rely on having all the Notes and embeddings of those notes, 
+so this class wraps all this together, allowing a user to instantiate a model by loading / embeddings
+notes from a source (e.g., Google Keep) and calling searching and clustering algorithms on this data
+without repeatedly having to load notes or recompute embeddings
+"""
 
 from .parser import KeepParser, Note
 from .embedder import Embedder  
@@ -54,8 +60,6 @@ class BrainOrganizer:
         # create clusterer
         brain.clusterer = Clusterer(brain.embeddings, brain.notes)
 
-        # create timeline creator
-        # TODO
         return brain
 
     # tool methods
@@ -68,7 +72,4 @@ class BrainOrganizer:
     def cluster_notes(self, num_clusters: int=5) -> ClusterResult:
         # cluster embeddings into `num_clusters` clusters
         clusters = self.clusterer.cluster(num_clusters)
-        return clusters
-        
-    def timeline(self):
-        raise NotImplementedError
+        return clusters 
