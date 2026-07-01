@@ -2,10 +2,10 @@
 This project is designed to embed personal notes (right now, only Google Keep notes imported with Google Takeover work) with sentence transformers, and perform analysis on this data.
 
 Currently, the following actions may be performed:
- - *Semantic Search*: search for the notes that most closely align with a query search.
- - *Clustering*: cluster the notes into categories based on semantic similarity.  
- - *Visualization*: visualize clusters in 2D or 3D.
- - *Timeline*: produces a histogram of notes taken in time.
+ - **Semantic Search**: search for the notes that most closely align with a query search.
+ - **Clustering**: cluster the notes into categories based on semantic similarity.  
+ - **Visualization**: visualize clusters in 2D or 3D.
+ - **Timeline**: produces a histogram of notes taken in time.
 
 ---
 
