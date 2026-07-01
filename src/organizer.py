@@ -3,7 +3,7 @@
 # (1) parse and load notes
 # (2) embed notes
 # (3) search notes with query
-# (4) TODO: cluster notes
+# (4) cluster notes
 # (5) TODO: timeline
 
 from .parser import KeepParser, Note
@@ -65,7 +65,7 @@ class BrainOrganizer:
         search_results = self.searcher.search(embedded_query, k=k)
         return search_results
 
-    def cluster_notes(self, num_clusters: int=5) -> dict[int, ClusterResult]:
+    def cluster_notes(self, num_clusters: int=5) -> ClusterResult:
         # cluster embeddings into `num_clusters` clusters
         clusters = self.clusterer.cluster(num_clusters)
         return clusters

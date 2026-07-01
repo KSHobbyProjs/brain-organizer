@@ -8,10 +8,6 @@ from enum import Enum
 
 from src.organizer import BrainOrganizer
 
-# only used for type hints
-from src.search import SearchResult
-from src.clustering import ClusterResult
-
 class CmdResult(Enum):
     NONE = 0      # continue with current iteration
     CONTINUE = 2  # move to next iteration
@@ -37,16 +33,11 @@ class BrainCLI:
                 }
 
     # ---------------------------------- COMMANDS for REPL -------------------------------
-    def do_query(self, query_txt: str) -> CmdResult:
-        search_results: list[SearchResult] = self.brain.search_notes(query_txt, self.top_k)
-        self.print_search_results(search_results)
-        return CmdResult.CONTINUE
+    def do_query(self, *args) -> CmdResult:
+        pass
 
-    def do_cluster(self, num_clusters: str='5') -> CmdResult:
-        num_clusters = int(num_clusters)
-        cluster_results: ClusterResult = self.brain.cluster_notes(num_clusters)
-        self.print_cluster_results(cluster_results)
-        return CmdResult.CONTINUE
+    def do_cluster(self, *args) -> CmdResult:
+        pass
 
     def do_clear(self, *args) -> CmdResult:
         self.console.clear()
@@ -86,18 +77,31 @@ class BrainCLI:
                 # read a line of input
                 line = input(f"brain> ")
 
-                # check for command and run command if so
+                # check for command and run command
                 if line.startswith(":"):
+                    # result can be 0 (do nothing), 1 (continue to next input), 2 (exit program)
                     result = self.handle_commands(line)
-                # otherwise, assume input is a query
-                else:
-                    result = self.do_query(line)
+                    if result == CmdResult.EXIT:
+                        break
+                    if result == CmdResult.CONTINUE:
+                        continue
                 
-                if result == CmdResult.EXIT:
-                    break
-                if result == CmdResult.CONTINUE:
-                    continue
-                
+                # run specific method based on brain mode
+                if self.mode == Mode.QUERY:
+                    search_results = self.brain.search_notes(line, self.top_k)
+                    self.print_results(search_results)
+                elif self.mode == Mode.CLUSTER:
+                    try:
+                        num_clusters = int(line)
+                    except ValueError:
+                        self.console.print(f"[yellow]{line} cannot be converted to type int[/yellow]")
+                        continue
+                    clusters = self.brain.cluster_notes(num_clusters)
+                    self.print_results(clusters.values())
+                elif self.mode == Mode.TIMELINE:
+                    self.console.print("[yellow]Timeline mode not supported yet[/yellow]")
+                    
+ 
             except EOFError:
                 # handles Ctrl+D and Ctrl+Z
                 self.console.print("\nEOF received. Exiting...")
