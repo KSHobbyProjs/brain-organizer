@@ -59,11 +59,14 @@ class BrainCLI:
         self._current_cluster_results = cluster_results # update cache
         return CmdResult.CONTINUE
 
-    def do_visualize(self, num_clusters: str='5', dim: str='2') -> CmdResult:
-        num_clusters = int(num_clusters)
+    def do_visualize(self, dim: str='2') -> CmdResult:
         dim = int(dim)
+        if self._current_cluster_results:
+            cluster_results = self._current_cluster_results
+        else:
+            self.console.print("[yellow]No clusters yet loaded. Load clusters with `:cluster`[/yellow]")
+            return CmdResult.CONTINUE
 
-        cluster_results: ClusterResult = self.brain.cluster_notes(num_clusters)
         visualizer.plot_clusters(cluster_results, dim)
         return CmdResult.CONTINUE
 
