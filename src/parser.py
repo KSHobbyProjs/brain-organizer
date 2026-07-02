@@ -56,6 +56,20 @@ class Note:
                     )
         return preview        
 
+    def to_fullnote(self) -> str:
+        title = f"{self.title}"
+        date = f"{self.created_time}"
+        last_edited = f"{self.edited_time}"
+        body = f"{self.text}"
+
+        fullprint = (
+                f"{title}\n"
+                f"Date: {date}\n"
+                f"Last edited: {last_edited}\n"
+                f"{body}"
+                )
+        return fullprint
+
 class KeepParser:
     def __init__(self, keep_directory: str | Path):
         self.keep_dir = Path(keep_directory)

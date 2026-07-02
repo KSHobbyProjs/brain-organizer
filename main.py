@@ -10,6 +10,7 @@ from src.organizer import BrainOrganizer
 import src.visualizer as visualizer
 
 # only used for type hints
+from src.parser import Note
 from src.search import SearchResult
 from src.clustering import ClusterResult
 
@@ -25,11 +26,14 @@ class BrainCLI:
 
         self.console = rich.console.Console()
 
+        self._current_query_results: list[SearchResult] | None = None
+        self._current_cluster_results: ClusterResult | None = None
+
         self.commands = {
-                "query" : self.do_query,
                 "cluster" : self.do_cluster,
                 "visualize": self.do_visualize,
                 "timeline": self.do_timeline,
+                "open" : self.do_open,
 
                 "clear" : self.do_clear,
                 "cls" : self.do_clear,
@@ -43,12 +47,16 @@ class BrainCLI:
     def do_query(self, query_txt: str) -> CmdResult:
         search_results: list[SearchResult] = self.brain.search_notes(query_txt, self.top_k)
         self.print_search_results(search_results)
+        
+        self._current_query_results = search_results # update cache
         return CmdResult.CONTINUE
 
     def do_cluster(self, num_clusters: str='5') -> CmdResult:
         num_clusters = int(num_clusters)
         cluster_results: ClusterResult = self.brain.cluster_notes(num_clusters)
         self.print_cluster_results(cluster_results)
+        
+        self._current_cluster_results = cluster_results # update cache
         return CmdResult.CONTINUE
 
     def do_visualize(self, num_clusters: str='5', dim: str='2') -> CmdResult:
@@ -62,6 +70,23 @@ class BrainCLI:
     def do_timeline(self):
         notes = self.brain.get_notes()
         visualizer.plot_timeline(notes)
+        return CmdResult.CONTINUE
+
+    def do_open(self, note_num: str='1'):
+        idx = int(note_num) - 1
+        if self._current_query_results:
+            try:
+                search_result = self._current_query_results[idx]
+            except IndexError:
+                self.console.print("[yellow]Requested note is out of range.\n Requesting more notes will be added soon.[/yellow]")
+                return CmdResult.CONTINUE
+        else:
+            self.console.print("[yellow]No notes loaded. Can't run open[/yellow]")
+            return CmdResult.CONTINUE
+
+
+        note = search_result.note
+        self.print_fullnote(note)
         return CmdResult.CONTINUE
 
     def do_clear(self, *args) -> CmdResult:
@@ -95,12 +120,15 @@ class BrainCLI:
         self.console.print(rich.rule.Rule())
         self.console.print(results.to_preview())
 
+    def print_fullnote(self, note: Note) -> None:
+        self.console.print(note.to_fullnote())
+
     # ----------------------------------- REPL ------------------------------------------
     def repl(self) -> None:
         while True:
             try:
                 # read a line of input
-                line = input(f"brain> ")
+                line = input(f"brain:query> ")
 
                 # check for command and run command if so
                 if line.startswith(":"):
