@@ -6,13 +6,12 @@ import argparse
 import rich.console, rich.rule
 from enum import Enum
 
-from src.organizer import BrainOrganizer
+from src.organizer import BrainOrganizer, QueryResult, ClusterResult
 import src.visualizer as visualizer
 
 # only used for type hints
-from src.parser import Note
+from src.models import Note, Chunk
 from src.search import SearchResult
-from src.clustering import ClusterResult
 
 class CmdResult(Enum):
     NONE = 0      # continue with current iteration
@@ -45,15 +44,16 @@ class BrainCLI:
 
     # ---------------------------------- COMMANDS for REPL -------------------------------
     def do_query(self, query_txt: str) -> CmdResult:
-        search_results: list[SearchResult] = self.brain.search_notes(query_txt, self.top_k)
-        self.print_search_results(search_results)
+        query_results: list[QueryResult] = self.brain.search_notes(query_txt, self.top_k)
+        # NEEDS EDITING TO FIX SEARCH RESULT CALL
+        self.print_query_results(query_results)
         
-        self._current_query_results = search_results # update cache
+        self._current_query_results = query_results # update cache
         return CmdResult.CONTINUE
 
     def do_cluster(self, num_clusters: str='5') -> CmdResult:
         num_clusters = int(num_clusters)
-        cluster_results: ClusterResult = self.brain.cluster_notes(num_clusters)
+        cluster_results: list[ClusterResult] = self.brain.cluster_notes(num_clusters)
         self.print_cluster_results(cluster_results)
         
         self._current_cluster_results = cluster_results # update cache
@@ -112,13 +112,15 @@ class BrainCLI:
         return result
 
     # ---------------------------------- PRINTING for REPL -------------------------------
-    def print_search_results(self, results) -> None:
+    def print_query_results(self, query_results: list[QueryResult]) -> None:
+        raise NotImplementedError
         for i, result in enumerate(results):
             self.console.print(f"[bold cyan]Result # {i+1}[/bold cyan]")
             self.console.print(f"{result.to_preview()}")
             self.console.print(rich.rule.Rule())
 
-    def print_cluster_results(self, results) -> None:
+    def print_cluster_results(self, cluster_results: list[ClusterResult]) -> None:
+        raise NotImplementedError
         self.console.print(f"[blue]Clusters[/blue]")
         self.console.print(rich.rule.Rule())
         self.console.print(results.to_preview())
@@ -171,11 +173,11 @@ def main():
     # but allow a straight query result if prompted with '--query'
     # the default mode of the repl is to accept queries and spit out results
     if args.query:
-        search_results = brain.search_notes(args.query, args.top_k)
-        brain_cli.print_search_results(search_results)
+        query_results = brain.search_notes(args.query, args.top_k)
+        brain_cli.print_query_results(query_results)
     elif args.cluster:
-        clusters = brain.cluster_notes(args.cluster)
-        brain_cli.print_cluster_results(clusters)
+        cluster_results = brain.cluster_notes(args.cluster)
+        brain_cli.print_cluster_results(cluster_results)
     elif args.visualize:
         clusters = brain.cluster_notes(args.visualize)
         visualizer.plot_clusters(clusters)

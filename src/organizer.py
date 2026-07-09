@@ -12,14 +12,29 @@ notes from a source (e.g., Google Keep) and calling searching and clustering alg
 without repeatedly having to load notes or recompute embeddings
 """
 
-from .parser import KeepParser, Note
+from .parser import KeepParser
+from .models import Note, Chunk
 from .embedder import Embedder  
 from .search import SemanticSearcher, SearchResult
-from .clustering import Clusterer, ClusterResult
+from .clusterer import Clusterer
+from . import chunking
 
 import numpy as np
 from pathlib import Path
+from dataclasses import dataclass
 from sentence_transformers import SentenceTransformer
+
+@dataclass
+class QueryResult:
+    score: float
+    note: Note
+    chunk: Chunk
+
+@dataclass
+class ClusterResult:
+    cluster_id: int
+    notes: list[Note]
+    chunks: list[Chunk]
 
 class BrainOrganizer:
     def __init__(self, notes_dir: str | Path, model_name: str):
@@ -33,9 +48,11 @@ class BrainOrganizer:
         self.searcher: SemanticSearcher | None = None
         self.clusterer: Clusterer | None = None
 
-        # notes and embeddings (unpopulated until and `embed_from` method is called)
+        # notes, embeddings, chunks, and chunks_idx (unpopulated until and `embed_from` method is called)
+        # embeddings and chunks stored such that self.embeddings[i, :] corresponds to chunks[i], always.
         self.notes: list[Note] = []
         self.embeddings: np.ndarray | None = None
+        self.chunks: list[str] = []
   
     # load brain (parse and embed) from Keep notes
     @classmethod
@@ -45,33 +62,50 @@ class BrainOrganizer:
                             ) -> "BrainOrganizer":
         brain = cls(keep_dir, model_name)
 
-        # parse keep notes 
+        # parse keep notes into a list of Note (domain objects)
         brain.parser.get_keepjson_files()
-        notes = brain.parser.create_notes()
+        notes: list[Note] = brain.parser.create_notes()
         brain.notes = notes
 
-        # embed keep notes using sentence transformer model
-        embeddings = brain.embedder.embed_many([note.to_text() for note in notes])
+        # chunk Note objects into list of Chunk (objects with content ready to be passed to embedder)
+        # currently chunking notes into paragraphs with added title / label context
+        chunks: list[Chunk] = chunking.chunk_paragraphs_with_context(notes)
+        brain.chunks = chunks
+
+        embeddings = brain.embedder.embed_many([chunk.text for chunk in chunks])
         brain.embeddings = embeddings
 
         # create searcher
-        brain.searcher = SemanticSearcher(brain.embeddings, brain.notes)
+        brain.searcher = SemanticSearcher(brain.embeddings)
 
         # create clusterer
-        brain.clusterer = Clusterer(brain.embeddings, brain.notes)
+        brain.clusterer = Clusterer(brain.embeddings)
 
         return brain
 
     # tool methods
-    def search_notes(self, query: str, k: int=1) -> list[SearchResult]:
+    def search_notes(self, query: str, k: int=1) -> list[QueryResult]:
         # search notes for best match to query
         embedded_query = self.embedder.embed(query)
-        search_results = self.searcher.search(embedded_query, k=k)
-        return search_results
+        search_results: list[SearchResults] = self.searcher.search(embedded_query, k=k)
+       
+        query_results = []
+        for sr in search_results:
+            chunk = self.chunks[sr.embedding_idx]
+            note = self.notes[chunk.note_id]
+            score = sr.score
+            query_results += [QueryResult(score, note, chunk)] 
+        return query_results
 
-    def cluster_notes(self, num_clusters: int=5) -> ClusterResult:
+    def cluster_notes(self, num_clusters: int=5) -> list[ClusterResult]:
         # cluster embeddings into `num_clusters` clusters
-        clusters = self.clusterer.cluster(num_clusters)
+        embedding_idx_to_cluster_id = self.clusterer.cluster(num_clusters)
+
+        clusters = []
+        for current_cluster in range(num_clusters):
+            chunks = [self.chunks[i] for i, idx in enumerate(embedding_idx_to_cluster_id) if idx == current_cluster]
+            notes = [self.notes[chunk.note_id] for chunk in chunks]
+            clusters += [ClusterResult(current_cluster, notes, chunks)]
         return clusters 
 
     def get_notes(self) -> list[Note]:

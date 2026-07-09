@@ -3,8 +3,9 @@
 # Extension to parsing other data can be added.
 from pathlib import Path
 import json
+
 import datetime
-from dataclasses import dataclass
+from .models import Note
 
 def parse_keep_timestamp(timestamp_usec: str | None) -> datetime.datetime | None:
     if timestamp_usec is None:
@@ -13,62 +14,6 @@ def parse_keep_timestamp(timestamp_usec: str | None) -> datetime.datetime | None
     return datetime.date.fromtimestamp(
             int(timestamp_usec) / 1_000_000
             )
-
-@dataclass
-class Note:
-    """
-    Class for storing data and metadata important to each note.
-    """
-    title: str
-    text: str
-    created_time: datetime.date | None
-    edited_time: datetime.date | None
-    labels: list[str]
-    is_pinned: bool
-    is_archived: bool
-    is_trashed: bool 
-
-    def to_text(self) -> str:
-        # a class to convert the Note object to a string for embedding
-        return f"Title: {self.title}\n\n{self.text}"
-
-    def get_created_time(self) -> datetime.date:
-        return self.created_time
-
-    def to_preview(self) -> str:
-        title = f"{self.title}"
-        date = f"{self.created_time}"
-        body = f"{self.text}"
-        
-        # truncate the body text to chars and 
-        # cut off last word of body in case it's incomplete
-        chars = 250 # this marks the length of the note body in the console
-        if len(body) > chars:
-            body = body[:chars]
-            if " " in body:
-                body = body.rsplit(" ", 1)[0]
-            body += "..."
-        
-        preview = (
-                f"{title}\n"
-                f"Date: {date}\n"
-                f"{body}"
-                    )
-        return preview        
-
-    def to_fullnote(self) -> str:
-        title = f"{self.title}"
-        date = f"{self.created_time}"
-        last_edited = f"{self.edited_time}"
-        body = f"{self.text}"
-
-        fullprint = (
-                f"{title}\n"
-                f"Date: {date}\n"
-                f"Last edited: {last_edited}\n"
-                f"{body}"
-                )
-        return fullprint
 
 class KeepParser:
     def __init__(self, keep_directory: str | Path):

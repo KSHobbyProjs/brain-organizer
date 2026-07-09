@@ -3,10 +3,11 @@
 # meaning among embedded text. Takes as input embedded text and returns the 
 # domain object (Note) that most closely aligns with it.
 
+# EDIT: Since changed to no longer depend on Note (coupling made troubleshooting difficult)
+
 from dataclasses import dataclass
 import numpy as np
 
-from .parser import Note
 
 def cosine_similarity(query: np.ndarray, embeddings: np.ndarray) -> np.ndarray:
     """
@@ -41,40 +42,36 @@ def cosine_similarity(query: np.ndarray, embeddings: np.ndarray) -> np.ndarray:
 
 @dataclass
 class SearchResult:
-    note: Note
-    score: float
-
-    def to_preview(self) -> str:
-        preview = (
-                f"{self.score:.3f}\n"
-                f"{self.note.to_preview()}"
-                   )
-        return preview
-        
+    embedding_idx: int
+    score: float 
+    # embedding: np.ndarray maybe it needs this in the future
 
 class SemanticSearcher: 
-    def __init__(self, embeddings: np.ndarray, notes: list[Note]):
+    def __init__(self, embeddings: np.ndarray):
         """
-        Notes
-        -----
-        The embeddings matrix should be ordered. I.e., structured so
-        that the ith row corresponds to the embedding vector for note notes[i]
+        Takes a list of embeddings, finds the top closest embeddings
+        closest to query embedding.
+        
+        Parameters
+        ----------
+        embeddings : np.ndarray
+            Shape (n, d). Matrix of n embedding vectors.
         """
 
         self.embeddings = embeddings
-        self.notes = notes
 
     def search(self, query: np.ndarray, k: int=1) -> list[SearchResult]:
         scores = cosine_similarity(query, self.embeddings)
         top_k_idx = np.argsort(scores)[::-1][:k]
 
-        retrieved_notes = [
+        retrieved_results = [
                 SearchResult(
-                        note=self.notes[idx],
-                        score=scores[idx]
+                        embedding_idx = idx,
+                        score=scores[idx],
+                        #embedding = self.embeddings[idx],
                         )
                 for idx in top_k_idx
                 ]
 
-        return retrieved_notes
+        return retrieved_results
         
