@@ -20,6 +20,15 @@ class Note:
     def get_created_time(self) -> datetime.date:
         return self.created_time
 
+    def to_full_note(self) -> str:
+        labels_str = " ".join(self.labels)
+        note = f"Title: {self.title}\n"
+        note += f"Date: {self.created_time}\n"
+        note += f"Labels: {self.labels}\n"
+        note += self.text
+        return note
+
+
 @dataclass 
 class Chunk:
     """

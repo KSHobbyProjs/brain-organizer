@@ -1,6 +1,9 @@
 # a module to chunk notes in different ways
 from .models import Note, Chunk
 
+# TODO: possibly make it so that this module is dedicated strictly to parsing one Note into Chunks rather than
+# taking an arbitrary list
+
 def chunk_fullnote(notes: list[Note]) -> list[Chunk]:
     chunks = []
     for i, note in enumerate(notes):

@@ -3,15 +3,19 @@
 # CLI for application
 
 import argparse
-import rich.console, rich.rule
+import rich.console
 from enum import Enum
 
 from src.organizer import BrainOrganizer, QueryResult, ClusterResult
 import src.visualizer as visualizer
+import src.formatting as formatting
 
 # only used for type hints
 from src.models import Note, Chunk
 from src.search import SearchResult
+
+# constants set for display
+CUTOFF = 1000
 
 class CmdResult(Enum):
     NONE = 0      # continue with current iteration
@@ -25,8 +29,8 @@ class BrainCLI:
 
         self.console = rich.console.Console()
 
-        self._current_query_results: list[SearchResult] | None = None
-        self._current_cluster_results: ClusterResult | None = None
+        self._current_query_results: list[QueryResult] | None = None
+        self._current_cluster_results: list[ClusterResult] | None = None
 
         self.commands = {
                 "cluster" : self.do_cluster,
@@ -41,12 +45,14 @@ class BrainCLI:
                 "q" : self.do_exit,
                 "quit" : self.do_exit
                 }
-
+        
     # ---------------------------------- COMMANDS for REPL -------------------------------
     def do_query(self, query_txt: str) -> CmdResult:
         query_results: list[QueryResult] = self.brain.search_notes(query_txt, self.top_k)
         # NEEDS EDITING TO FIX SEARCH RESULT CALL
-        self.print_query_results(query_results)
+        self.console.print(
+                formatting.format_query_results(query_results)
+                )
         
         self._current_query_results = query_results # update cache
         return CmdResult.CONTINUE
@@ -54,7 +60,9 @@ class BrainCLI:
     def do_cluster(self, num_clusters: str='5') -> CmdResult:
         num_clusters = int(num_clusters)
         cluster_results: list[ClusterResult] = self.brain.cluster_notes(num_clusters)
-        self.print_cluster_results(cluster_results)
+        self.console.print(
+                formatting.format_cluster_results(cluster_results)
+                )
         
         self._current_cluster_results = cluster_results # update cache
         return CmdResult.CONTINUE
@@ -79,7 +87,7 @@ class BrainCLI:
         idx = int(note_num) - 1
         if self._current_query_results:
             try:
-                search_result = self._current_query_results[idx]
+                selected_query_result = self._current_query_results[idx]
             except IndexError:
                 self.console.print("[yellow]Requested note is out of range.\n Requesting more notes will be added soon.[/yellow]")
                 return CmdResult.CONTINUE
@@ -88,8 +96,8 @@ class BrainCLI:
             return CmdResult.CONTINUE
 
 
-        note = search_result.note
-        self.print_fullnote(note)
+        note = selected_query_result.note
+        self.console.print(note.to_full_note())
         return CmdResult.CONTINUE
 
     def do_clear(self, *args) -> CmdResult:
@@ -110,23 +118,6 @@ class BrainCLI:
         
         result = func(*args)
         return result
-
-    # ---------------------------------- PRINTING for REPL -------------------------------
-    def print_query_results(self, query_results: list[QueryResult]) -> None:
-        raise NotImplementedError
-        for i, result in enumerate(results):
-            self.console.print(f"[bold cyan]Result # {i+1}[/bold cyan]")
-            self.console.print(f"{result.to_preview()}")
-            self.console.print(rich.rule.Rule())
-
-    def print_cluster_results(self, cluster_results: list[ClusterResult]) -> None:
-        raise NotImplementedError
-        self.console.print(f"[blue]Clusters[/blue]")
-        self.console.print(rich.rule.Rule())
-        self.console.print(results.to_preview())
-
-    def print_fullnote(self, note: Note) -> None:
-        self.console.print(note.to_fullnote())
 
     # ----------------------------------- REPL ------------------------------------------
     def repl(self) -> None:

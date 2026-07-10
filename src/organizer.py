@@ -29,12 +29,14 @@ class QueryResult:
     score: float
     note: Note
     chunk: Chunk
+    embedding: np.ndarray
 
 @dataclass
 class ClusterResult:
     cluster_id: int
     notes: list[Note]
     chunks: list[Chunk]
+    embeddings: list[np.ndarray]
 
 class BrainOrganizer:
     def __init__(self, notes_dir: str | Path, model_name: str):
@@ -91,21 +93,23 @@ class BrainOrganizer:
        
         query_results = []
         for sr in search_results:
+            embedding = self.embeddings[sr.embedding_idx]
             chunk = self.chunks[sr.embedding_idx]
             note = self.notes[chunk.note_id]
             score = sr.score
-            query_results += [QueryResult(score, note, chunk)] 
+            query_results += [QueryResult(score, note, chunk, embedding)] 
         return query_results
 
     def cluster_notes(self, num_clusters: int=5) -> list[ClusterResult]:
         # cluster embeddings into `num_clusters` clusters
-        embedding_idx_to_cluster_id = self.clusterer.cluster(num_clusters)
+        embedding_idx_to_cluster_id = self.clusterer.get_clusters(num_clusters)
 
         clusters = []
         for current_cluster in range(num_clusters):
             chunks = [self.chunks[i] for i, idx in enumerate(embedding_idx_to_cluster_id) if idx == current_cluster]
             notes = [self.notes[chunk.note_id] for chunk in chunks]
-            clusters += [ClusterResult(current_cluster, notes, chunks)]
+            embeddings = [self.embeddings[i] for i, idx in enumerate(embedding_idx_to_cluster_id) if idx == current_cluster]
+            clusters += [ClusterResult(current_cluster, notes, chunks, embeddings)]
         return clusters 
 
     def get_notes(self) -> list[Note]:

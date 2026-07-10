@@ -2,7 +2,8 @@
 # visualizer.py
 # a module that provides visualization utilities for the brain
 
-from .parser import Note
+from .models import Note
+from .organizer import ClusterResult
 
 import numpy as np
 from sklearn.decomposition import PCA
@@ -12,18 +13,14 @@ import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
-def plot_clusters(embeddings: np.ndarray, cluster_idx: list[int], dim: int=2) -> None:
+def plot_clusters(cluster_results: list[ClusterResult], dim: int=2) -> None:
     """
     Plots a PCA visualization of created clusters
 
     Parameters
     ----------
-    embeddings : np.ndarray
-        Shape (n, d) for n embeddings. 
-
-    cluster_dix : list[int]
-        List mapping each embedding to a specific cluster.
-        e.g. cluster_idx[5] = 2 -> embeddings[5, :] belongs to cluster 2.
+    cluster_results : list[ClusterResult]
+        note and embedding data for each cluster. Shape (n, d) for n embeddings. 
 
     Returns
     -------
@@ -33,6 +30,10 @@ def plot_clusters(embeddings: np.ndarray, cluster_idx: list[int], dim: int=2) ->
     ----
     Produces a plot using matplotlib.
     """
+    # convert list of ClusterResults to embeddings and color_idx
+    embeddings = np.concatenate([r.embeddings for r in cluster_results], axis=0)
+    cluster_idx = [r.cluster_id for r in cluster_results for _ in range(len(r.embeddings))]
+
     pca_projected_embeddings = PCA(n_components=dim).fit_transform(embeddings)
 
     # take the (x, y) or (x, y, z) for each embedding
@@ -40,10 +41,12 @@ def plot_clusters(embeddings: np.ndarray, cluster_idx: list[int], dim: int=2) ->
 
     if dim == 2:
         fig, ax = plt.subplots()
-    if dim ==3: 
+    elif dim ==3: 
         fig = plt.figure()
         ax = fig.add_subplot(projection='3d')
-    
+    else:
+        raise ValueError(f"dim can only be 2 or 3. got {dim}")
+
     ax.scatter(*z, c=cluster_idx)
     plt.show()
     
