@@ -164,11 +164,9 @@ def main():
     # but allow a straight query result if prompted with '--query'
     # the default mode of the repl is to accept queries and spit out results
     if args.query:
-        query_results = brain.search_notes(args.query, args.top_k)
-        brain_cli.print_query_results(query_results)
+        brain_cli.do_query(args.query)
     elif args.cluster:
-        cluster_results = brain.cluster_notes(args.cluster)
-        brain_cli.print_cluster_results(cluster_results)
+        brain_cli.do_cluster(args.cluster)
     elif args.visualize:
         clusters = brain.cluster_notes(args.visualize)
         visualizer.plot_clusters(clusters)

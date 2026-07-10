@@ -14,6 +14,7 @@ def format_query_results(query_results: list[QueryResult]) -> Group:
     for i, result in enumerate(query_results):
         renderables.extend([
             f"[bold cyan]Result # {i+1}[/bold cyan]",
+            f"[blue]Score: {result.score}[/blue]",
             f"{result.chunk.text[:CUTOFF]}",
             Rule(),
         ])
