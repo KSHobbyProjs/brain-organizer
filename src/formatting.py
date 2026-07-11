@@ -15,7 +15,7 @@ def format_query_results(query_results: list[QueryResult]) -> Group:
         renderables.extend([
             f"[bold cyan]Result # {i+1}[/bold cyan]",
             f"[blue]Score: {result.score}[/blue]",
-            f"{result.chunk.text[:CUTOFF]}",
+            f"[white]{result.chunk.text[:CUTOFF]}[/white]",
             Rule(),
         ])
 
@@ -24,8 +24,8 @@ def format_query_results(query_results: list[QueryResult]) -> Group:
 def format_cluster_results(cluster_results: list[ClusterResult]) -> Group:
     renderables = [f"[blue]Clusters[/blue]", Rule()]
     for cluster in cluster_results:
-        renderables.extend([f"[bold cyan]Cluster # {cluster.cluster_id}[/bold cyan]"])
-        renderables.extend([c.text for c in cluster.chunks[:CHUNKS_PER_CLUSTER]])
+        renderables.extend([f"[bold cyan]Cluster # {cluster.cluster_id+1}[/bold cyan]"])
+        renderables.extend([f"[white]{c.text}[/white]\n" for c in cluster.chunks[:CHUNKS_PER_CLUSTER]])
         renderables.extend([Rule()])
     
     return Group(*renderables)

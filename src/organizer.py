@@ -71,7 +71,12 @@ class BrainOrganizer:
 
         # chunk Note objects into list of Chunk (objects with content ready to be passed to embedder)
         # currently chunking notes into paragraphs with added title / label context
-        chunks: list[Chunk] = chunking.chunk_paragraphs_with_context(notes)
+        chunks: list[Chunk] = chunking.chunk_notes(
+                notes,
+                chunking.chunk_paragraphs_smart,
+                include_context=False, 
+                min_len=200, max_len=1000
+                )
         brain.chunks = chunks
 
         embeddings = brain.embedder.embed_many([chunk.text for chunk in chunks])

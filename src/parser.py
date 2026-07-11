@@ -35,6 +35,8 @@ class KeepParser:
        return keepjson_files
 
     def create_notes(self) -> list[Note]:
+        if self.keepjson_files == []:
+            raise RuntimeError(f"no files have been loaded into the parser. use `get_keepjson_files()` or similar first.")
         notes = []
         for file in self.keepjson_files:
             note = self.create_note_from_keepjson(file)

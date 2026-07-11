@@ -56,38 +56,29 @@ def chunk_paragraphs_smart(note: Note, min_len: int=200, max_len: int=1000) -> l
     """
 
     def _split_paragraph(paragraph: str) -> list[str]:
-        """ 
-        Split a paragraph into bits if it's above a certain threshold.
-        Separates a string into chunks with sizes no larger than max_len
-        such that sentence structure is maintained.
-
-        BUG: A sentence like `Dr. Smith studied` is not parsed properly due
-        to the splitting at '. '
-        """  
-        # first check if paragraph is long enough to warrant this:
-        if len(paragraph.strip()) <= max_len:
-            return [paragraph.strip()]
-
+        """ split a paragraph into bits if it's massive """
+        
         # split paragraphs into its sentences (approximately)
         sentences = paragraph.strip().split(". ")
-       
+        num_sentences = len(sentences)
+        
         current_chunk = ""
+        counter = 0
         chunks = []
-        for sentence in sentences:
-            candidate = current_chunk + sentence + ". "
-            if len(candidate) > max_len and current_chunk:
-                chunks.append(current_chunk.strip())
-                current_chunk = sentence + ". "
-            else:
-                current_chunk = candidate
-            
-        if current_chunk:
-            chunks.append(current_chunk.strip())
+        for i, sentence in enumerate(sentences):
+            temp_chunk = current_chunk
+            current_chunk += (sentence + ". ")
+            counter += len(current_chunk)
+            if counter => max_len:
+                if temp_chunk: chunks.append(temp_chunk + ". ")
+                current_chunk = sentence
+            if i == (num_sentences-1):
+                chunks.append(current_chunk)
         return chunks
 
     note_text = note.text.strip()
 
-    chunks: list[Chunk] = []
+    chunks = []
     current_chunk = ""
     remaining_text = note_text
     while remaining_text:
@@ -96,27 +87,23 @@ def chunk_paragraphs_smart(note: Note, min_len: int=200, max_len: int=1000) -> l
         if len(split) == 2:
             next_paragraph, remaining_text = split
         else:
-            next_paragraph = split[0]
+            chunks.append(_split_paragraph(split[0]))
             remaining_text = ""
 
-        if len(current_chunk + next_paragraph) > max_len:
-            if current_chunk:                 # make sure the current chunk isnt' ""
-                chunks.append(current_chunk.strip())
-            if len(next_paragraph) < min_len:
-                current_chunk = next_paragraph
-            else:
-                chunks.extend(_split_paragraph(next_paragraph))
-                current_chunk = ""
-        elif len(current_chunk + next_paragraph) >= min_len:
-            chunks.append((current_chunk + "\n\n" + next_paragraph).strip())
+        temp_chunk = current_chunk
+        current_chunk += next_paragraph
+        
+        if len(current_chunk) > max_len:
+            chunks.append(temp_chunk)
+            chunks.append(_split_paragraph(next_paragraph))
             current_chunk = ""
-        else:
-            current_chunk += ("\n\n" + next_paragraph)
-
-    if current_chunk:
-        chunks.append(current_chunk.strip())
-
+        elif len(current_chunk) >= min_len:
+            chunks.append(current_chunk)
+            current_chunk = ""
     return chunks
+
+
+
 
 def chunk_by_token_number(note: Note, num_tokens: int=50) -> Chunk:
     note_text = note.text.strip()
