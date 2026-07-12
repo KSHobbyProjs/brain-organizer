@@ -53,17 +53,18 @@ class SemanticGraphBuilder:
         # distances, neighbors have shape (n_embeddings, k+1)
         distances, neighbors_idx = self.nn.kneighbors(self.embeddings, n_neighbors=k+1, return_distance=True)
         
-        for i in range(len(self.embeddings)):
+        for i, embedding in self.embeddings:
             # exclude the neighbor that's just embedding itself.
             mask = neighbors_idx[i,:] != i
             # grab top k neighbors for embedding i
-            top_k_idx = neighbors_idx[i, mask][:k] # in the very rarest of cases, this [:k] actually does something
-            scores = 1 - distances[i, mask][:k]
+            top_k_idx = neighbors_idx[i, mask]
+            scores = 1 - distances[i, mask]
             
             # add nodes and edges
-            self.graph.add_node(i) # not strictly needed since edges will add automatically
-            edges = [(i, j, score) for j, score in zip(top_k_idx, scores)]
-            self.graph.add_weighted_edges_from(edges)
+            self.graph.add_node(i)
+            edges = [(i, idx, score) for idx, score in zip(top_k_idx, scores)]
+            edges_
+
 
     def create_mutual_knn_graph(self, k: int=5) -> None:
         """
@@ -71,21 +72,19 @@ class SemanticGraphBuilder:
         and node j are connected with an edge if both nodes are
         members of the kNN of the other.
         """
-        # grab top k+1 neighbors for all embeddings
-        distances, neighbors_idx = self.nn.kneighbors(self.embeddings, n_neighbors=k+1, return_distance=True)
-       
-        for i in range(len(self.embeddings)):
-            self.graph.add_node(i)
-            # exclude the neighbor that's just the embedding itself
-            mask_i = neighbors_idx[i, :] != i
-            # grab top k neighbors for embedding i
-            top_k_idx = neighbors_idx[i, mask_i][:k]
-            for jdx, j in enumerate(top_k_idx):
-                mask_j = neighbors_idx[j, :] != j
-                if i in neighbors_idx[j, mask_j][:k]:
-                    score = 1 - distances[i, jdx]
-                    self.graph.add_edge(i, j, weight=score)
+        # grab cosine similarity between all pairs of embeddings
+        similarity_mat = cosine_similarity_mat(self.embeddings)
 
+        for i, embedding in enumerate(self.embeddings):
+            self.graph.add_node(i)
+            # find kNN
+            top_k_idx = np.argsort(similarity_mat[i,:])[::-1][:k]
+
+            for k in top_k_idx:
+                # check if embeddings[k] has embedding as a kNN as well
+                
+                = cosine_similarity_to_group(self.embeddings[k], self.embeddings)
+                top_k_for_embedding_k
 
     def create_threshold_graph(self, threshold: float=.5) -> None:
         raise NotImplementedError
