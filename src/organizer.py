@@ -18,6 +18,8 @@ from .embedder import Embedder
 from .search import SemanticSearcher, SearchResult
 from .clusterer import Clusterer
 from . import chunking
+from .graph import SemanticGraphBuilder
+
 
 import numpy as np
 from pathlib import Path
@@ -49,12 +51,13 @@ class BrainOrganizer:
         self.embedder = Embedder(SentenceTransformer(model_name, device='cuda'))
         self.searcher: SemanticSearcher | None = None
         self.clusterer: Clusterer | None = None
+        self.grapher: SemanticGraphBuilder | None = None
 
-        # notes, embeddings, chunks, and chunks_idx (unpopulated until and `embed_from` method is called)
+        # notes, embeddings, chunks (unpopulated until and `embed_from` method is called).
         # embeddings and chunks stored such that self.embeddings[i, :] corresponds to chunks[i], always.
         self.notes: list[Note] = []
         self.embeddings: np.ndarray | None = None
-        self.chunks: list[str] = []
+        self.chunks: list[Chunk] = []
   
     # load brain (parse and embed) from Keep notes
     @classmethod
@@ -70,7 +73,7 @@ class BrainOrganizer:
         brain.notes = notes
 
         # chunk Note objects into list of Chunk (objects with content ready to be passed to embedder)
-        # currently chunking notes into paragraphs with added title / label context
+        # currently chunking notes into paragraphs via smart chunking without context
         chunks: list[Chunk] = chunking.chunk_notes(
                 notes,
                 chunking.chunk_paragraphs_smart,
@@ -87,6 +90,9 @@ class BrainOrganizer:
 
         # create clusterer
         brain.clusterer = Clusterer(brain.embeddings)
+
+        # create grapher
+        brain.grapher = SemanticGraphBuilder(brain.embeddings)
 
         return brain
 
@@ -119,3 +125,6 @@ class BrainOrganizer:
 
     def get_notes(self) -> list[Note]:
         return self.notes
+
+    def get_chunks(self) -> list[Chunk]:
+        return self.chunks

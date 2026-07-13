@@ -1,20 +1,30 @@
 #!/usr/bin/env python3 
 
-from src.parser import KeepParser
 import numpy as np
+from src.organizer import BrainOrganizer
 
-parser = KeepParser("/home/keanan/brain-organizer/tests/keep/")
-parser.get_keepjson_files()
-notes = parser.create_notes()
 
-# # of double spaces
-nn = []
-# length of text
-text_len = []
-# number of times there were occurences of more than 3 spaces
-ss = []
-for note in notes:
-    text = note.text
+brain = BrainOrganizer.from_keep_directory("/home/keanan/brain-organizer/tests/keep/")
+
+# Testing graph capabilities
+"""
+print("creating knn graph")
+brain.grapher.create_knn_graph()
+print("creating mutual knn graph")
+brain.grapher.create_mutual_knn_graph()
+print("creating threshold graph")
+brain.grapher.create_threshold_graph()
+print("creating hairball graph")
+brain.grapher.create_hairball_graph()
+"""
+
+# testing chunking
+chunks = brain.get_chunks()
+nn = [] # number of double spaces in text
+text_len = [] # length of text
+ss = [] # number of times there were occurences of more than 3 spaces
+for chunk in chunks:
+    text = chunk.text
     nn.append(len(text.strip().split('\n\n')))
     text_len.append(len(text))
     ss.append(len(text.strip().split("  ")))
@@ -33,6 +43,5 @@ for i, data in enumerate([nn, text_len, ss]):
     print(f"(Min, Max, Mean, Std) for {labels[i]}:"
           f"({min_}, {max_}, {avg:.3f}, {std:.3f})"
           )
-
 
 
