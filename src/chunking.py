@@ -2,6 +2,8 @@
 from .models import Note, Chunk
 from collections.abc import Callable
 
+import math as m
+
 def chunk_notes(
         notes: list[Note],
         chunk_func: Callable[[Note], list[str]],
@@ -24,114 +26,13 @@ def chunk_notes(
                     )
             chunks.append(Chunk(note_id, chunk_text))
     return chunks
- 
-def chunk_fullnote(note: Note) -> list[str]:
+
+# -------------------------------------- Chunking methods ----------------------------------------
+def chunk_by_fullnote(note: Note) -> list[str]:
     return [note.text]
 
-def chunk_paragraphs(note: Note) -> list[str]:
+def chunk_by_paragraphs(note: Note) -> list[str]:
     return note.text.strip().split("\n\n")
-
-def chunk_paragraphs_smart(note: Note, min_len: int=200, max_len: int=1000) -> list[str]:
-    # TODO: Bug if there is an extremely lengthy sentence.
-    # TODO: convert the problem to tokens instead of raw text length.
-    """
-    Chunk note contents into paragraphs, but shrink or extend paragraphs
-    that are too long or too short. 
-
-    For instance, a paragraph with length between min_len and max_len will
-    pass as a chunk. If a paragraph is less than min_len, it will be added 
-    to paragraphs after (preserving paragraph structure) until it's length 
-    is between min_len and max_len. If a paragraph is larger than max_len,
-    then it will be divided into chunks of approximately max_len (preserving
-    sentence structure as best as possible).
-
-    Parameters
-    ----------
-    note : Note
-        A note object including the notes text and metadata.
-    min_len : int, optional
-        Minimum length of each chunk. Default = 200.
-    max_len : int, optional
-        Maximum length of each chunk. Default = 1000.
-
-    Returns
-    -------
-    chunks : list[str]
-        A list of the chunks making up the note.
-    """
-
-    def _split_paragraph(paragraph: str) -> list[str]:
-        """ 
-        Split a paragraph into bits if it's above a certain threshold.
-        Separates a string into chunks with sizes no larger than max_len
-        such that sentence structure is maintained.
-
-        BUG: A sentence like `Dr. Smith studied` is not parsed properly due
-        to the splitting at '. '
-        """  
-        # if paragraph is smaller than max_len, don't split; return full paragraph
-        if len(paragraph.strip()) <= max_len:
-            return [paragraph.strip()]
-
-        # split paragraphs into its sentences (approximately)
-        sentences = paragraph.strip().split(". ")
-       
-        current_chunk = ""
-        chunks = []
-        # add sentences of paragraph together until doing so would make the current sum larger than max_len,
-        # then put that sum of sentences into chunks, reset the current chunk, and repeat until the entire
-        # paragraph is swept through.
-        for sentence in sentences:
-            candidate = current_chunk + sentence + ". "
-            if len(candidate) > max_len and current_chunk:
-                chunks.append(current_chunk.strip())
-                current_chunk = sentence + ". "
-            else:
-                current_chunk = candidate
-            
-        if current_chunk:
-            chunks.append(current_chunk.strip())
-        return chunks
-
-    note_text = note.text.strip()
-
-    chunks: list[str] = []
-    current_chunk = ""         # current chunk str
-    remaining_text = note_text # remaining text in note
-    while remaining_text:
-        # split off next paragraph from remaining text
-        split = remaining_text.split("\n\n", 1) 
-      
-        if len(split) == 2:
-            next_paragraph, remaining_text = split
-        else:
-            next_paragraph = split[0]  # if that was the last paragraph, process it and exit
-            remaining_text = ""
-
-        # if current chunk becomes larger than max_len after adding next paragraph
-        if len(current_chunk + next_paragraph) > max_len: 
-            if current_chunk:                       # make sure the current chunk isn't "", then add current chunk w/o next paragraph to chunks
-                chunks.append(current_chunk.strip())
-            if len(next_paragraph) < min_len:       # if next paragraph is smaller than min_len, reset current chunk to this paragraph to add more to it
-                current_chunk = next_paragraph
-            else:
-                chunks.extend(_split_paragraph(next_paragraph)) # if next paragraph is larger than min_len, process it (split if necessary; otherwise add to chunks), and reset current chunk
-                current_chunk = ""
-        # if not larger than max_len but larger than min_len after adding next paragraph to chunk, add the current chunk + next paragraph to chunks and reset current chunk
-        elif len(current_chunk + next_paragraph) >= min_len:
-            chunks.append((current_chunk + "\n\n" + next_paragraph).strip())
-            current_chunk = ""
-        # if current chunk + next paragraph is still smaller than min_len, then update current chunk and continue
-        else:
-            current_chunk += ("\n\n" + next_paragraph)
-
-    # add current chunk remaining after while loop breaks to chunks
-    if current_chunk:
-        chunks.append(current_chunk.strip())
-
-    for chunk in chunks:
-        assert len(chunk) <= max_len, len(chunk)
-    return chunks
 
 def chunk_by_token_number(note: Note, num_tokens: int=50) -> list[str]:
     note_text = note.text.strip()
@@ -139,3 +40,133 @@ def chunk_by_token_number(note: Note, num_tokens: int=50) -> list[str]:
 
 def chunk_by_AI_summary():
     raise NotImplementedError
+
+def chunk_by_paragraphs_smart(note: Note, soft_min_len: int=300, max_len: int=1500) -> list[str]:
+    """ 
+    Chunk note text into sections while preserving paragraph boundaries.
+
+    The algorithm operates in two stages:
+    1. The note text is split into paragraphs, and paragraphs longer than `max_len` are split into smaller pieces.
+    2. Adjacent paragraph pieces are combined when possible. Combined paragraph pieces are always kept below `max_len`. 
+       The algorithm attempts to keep chunks above `soft_min_len`.
+
+    Parameters
+    ----------
+    note : Note
+        The note containing the note text.
+    soft_min_len : int 
+        Target minimum section length (not always reached; see Notes).
+    max_len : int
+        Maximum section length.
+
+    Returns
+    -------
+    list[str]
+        List of sections.
+
+    Note
+    ----
+    Paragraph order is preserved.
+    
+    `soft_min_len` is not a strict lower bound. Some chunks may be shorter than this value when merging
+    would otherwise violate the `max_len` condition.
+
+        The original implementation circumvented this issue by building chunks line by line, 
+        but it was far too messy, and the tradeoff in chunk quality is small.
+    """
+    # split note text into paragraphs
+    paragraphs = note.text.strip().split("\n\n")
+    # process paragraphs by splitting them if they're too long
+    parsed_paragraphs = [
+            pp
+            for p in paragraphs 
+            for pp in _process_paragraph(p, max_len)
+            ]
+    # link paragraphs together so each chunk text is between soft_min_len and max_len long (as best as possible)
+    packed_paragraphs = _pack_paragraphs(parsed_paragraphs, soft_min_len, max_len)
+    return packed_paragraphs
+
+# -------------------------------------- Helper methods ------------------------------------------
+def _process_paragraph(paragraph: str, max_len: int) -> list[str]:
+    """ Split long paragraphs into sections of length max_len """
+    paragraph = paragraph.strip()
+    if len(paragraph) <= max_len:
+        return [paragraph]
+   
+    return [
+            paragraph[i : i + max_len]
+            for i in range(0, len(paragraph), max_len)
+        ]
+
+def _pack_paragraphs(paragraphs: list[str], soft_min_len: int, max_len: int) -> list[str]:
+    """
+    Squeeze together paragraphs in an ordered list so that most elements of the list 
+    have a length between min_len and max_len while maintaining the order of the strings.
+
+    Notes
+    ----
+    This function assumes that no elements of `paragraphs` is longer than max_len on
+    its own.
+
+    Because order is to be maintained and no paragraph is allowed to breach max_len, there 
+    can possibly be some paragraphs whose length is below soft_min_len.
+    """
+    packed_paragraphs = []
+    paragraphs = paragraphs.copy() # so original paragraphs list isn't destroyed
+
+    # loop backward over paragraphs, adding paragraphs together as necessary
+    i = len(paragraphs) - 1
+    while i > 0:
+        n = len(paragraphs[i])
+        if n >= soft_min_len and n <= max_len:
+            packed_paragraphs.append(paragraphs[i])
+        elif n < soft_min_len:
+            candidate = paragraphs[i-1] + "\n\n" + paragraphs[i]
+            if len(candidate) > max_len:
+                packed_paragraphs.append(paragraphs[i]) # allows a paragraph smaller than soft_min_len to pass through
+            else:
+                paragraphs[i-1] = candidate
+        # no need for n > max_len check because of assumption (see Notes)
+        paragraphs.pop()
+        i -= 1
+    
+    # append the remaining paragraph after while loop finishes
+    packed_paragraphs.append(paragraphs[0])
+
+    return packed_paragraphs[::-1] # flip order since walked over list backwards
+
+def _sentence_splitter(paragraph: str, max_len: int) -> list[str]:
+    """ 
+    Split long paragraphs into sections of max_len, while preserving sentence
+    structure as best as possible
+    
+    Note: A sentence like `Dr. Smith studied` is not parsed properly due to
+    the splitting at '. '.
+    """
+    # if paragraph is smaller than max_len, don't split; return full paragraph
+    if len(paragraph.strip()) <= max_len:
+        return [paragraph.strip()]
+
+    # split paragraphs into its sentences (approximately)
+    sentences = paragraph.strip().split(". ")
+   
+    current_chunk = ""
+    chunks = []
+    # add sentences of paragraph together until doing so would make the current sum larger than max_len,
+    # then put that sum of sentences into chunks, reset the current chunk, and repeat until the entire
+    # paragraph is swept through.
+    for sentence in sentences:
+        candidate = current_chunk + sentence + ". "
+        if len(candidate) > max_len:
+            if current_chunk:
+                chunks.append(current_chunk.strip())
+            else:
+                # if current_chunk="", the sentence is longer than max_len, so cut it into pieces
+                chunks.extend([sentence[i:i+max_len] for i in range(0, len(sentence), max_len)])
+            current_chunk = sentence + ". "
+        else:
+            current_chunk = candidate
+        
+    if current_chunk:
+        chunks.append(current_chunk.strip())
+    return chunks

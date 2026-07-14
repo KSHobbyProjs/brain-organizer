@@ -74,14 +74,16 @@ class BrainOrganizer:
 
         # chunk Note objects into list of Chunk (objects with content ready to be passed to embedder)
         # currently chunking notes into paragraphs via smart chunking without context
+        # TODO: pass these as arguments so the user can select which chunking algorithm
         chunks: list[Chunk] = chunking.chunk_notes(
                 notes,
-                chunking.chunk_paragraphs_smart,
+                chunking.chunk_by_paragraphs_smart,
                 include_context=False, 
-                min_len=200, max_len=1000
+                soft_min_len=300, max_len=1500
                 )
         brain.chunks = chunks
 
+        # TODO: pass the metric as an argument so users can select which metric to measure embeddings with (currently cosine)
         embeddings = brain.embedder.embed_many([chunk.text for chunk in chunks])
         brain.embeddings = embeddings
 

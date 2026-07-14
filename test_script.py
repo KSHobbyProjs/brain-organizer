@@ -44,4 +44,9 @@ for i, data in enumerate([nn, text_len, ss]):
           f"({min_}, {max_}, {avg:.3f}, {std:.3f})"
           )
 
-
+print("-----------------------")
+print(chunks[np.random.randint(0, len(chunks))].text)
+print("-----------------------")
+print(chunks[np.random.randint(0, len(chunks))].text)
+print("-----------------------")
+print(chunks[np.random.randint(0, len(chunks))].text)
