@@ -8,6 +8,8 @@ from .organizer import ClusterResult
 import numpy as np
 from sklearn.decomposition import PCA
 from datetime import datetime
+import networkx as nx
+import py4cytoscape as p4c
 
 import matplotlib
 matplotlib.use('TkAgg')
@@ -59,4 +61,9 @@ def plot_timeline(notes: list[Note]):
     fig, ax = plt.subplots()
     ax.hist(times, bins=20, rwidth=.9)
     plt.show()
+
+def plot_graph_with_cytoscape(graph: nx.Graph):
+    p4c.create_network_from_networkx(graph, title="Semantic Note Graph")
+    p4c.layouts.layout_network('force-directed')
+    p4c.create_view()
 

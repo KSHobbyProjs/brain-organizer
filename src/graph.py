@@ -11,15 +11,17 @@ from sklearn.neighbors import NearestNeighbors
 #       instantiate a NearestNeighbor object
 
 class SemanticGraphBuilder:
-    def __init__(self, embeddings: np.ndarray):
+    def __init__(self, embeddings: np.ndarray, metric: str='cosine'):
         """
         Produces a graph for given embeddings
-
         """
         self.graph = nx.Graph()
         self.embeddings = embeddings
 
-        self.nn = NearestNeighbors(metric='cosine').fit(embeddings)
+        self.nn = NearestNeighbors(metric=metric).fit(embeddings)
+
+        # add one node for each embedding (labeled by embedding id) to the graph
+        self._initialize_nodes() 
 
     def create_hairball_graph(self) -> None:
         """ 
@@ -37,7 +39,6 @@ class SemanticGraphBuilder:
 
         num_embeddings = len(self.embeddings)
         for i in range(num_embeddings-1):
-            self.graph.add_node(i)
             for j in range(i+1, num_embeddings):
                 self.graph.add_edge(i, j, weight=score_mat[i,j]) 
 
@@ -57,7 +58,6 @@ class SemanticGraphBuilder:
             top_k_idx = neighbors_idx[i, :]
             
             # add nodes and edges
-            self.graph.add_node(i) # add each embedding as a node
             edges = [(i, j, score) for j, score in zip(top_k_idx, scores[i,:])] # create edges between embedding and its neighbors
             self.graph.add_weighted_edges_from(edges)
 
@@ -68,7 +68,7 @@ class SemanticGraphBuilder:
         members of the kNN of the other.
         """
         # grab top k neighbors for all embeddings
-        distances, neighbors_idx = self.nn.kneighbors(self.embeddings, n_neighbors=k, return_distance=True)
+        distances, neighbors_idx = self.nn.kneighbors(n_neighbors=k, return_distance=True)
         scores = 1 - distances
 
         # get neighbors for each embedding (neighbor_sets[i] are the neighbor idxs for embedding i)
@@ -81,9 +81,8 @@ class SemanticGraphBuilder:
             neighbor_sets.append(set(k_neighbors)) # make it a set so lookup is O(1)
             neighbor_lookup.append(dict(zip(k_neighbors, k_scores)))
 
-        # add nodes and edges
+        # add edges
         for i in range(n):
-            self.graph.add_node(i)  # add each embedding as a node 
             for j, score in neighbor_lookup[i].items():
                 # add an edge if embeddings are neighbors to each other
                 if i in neighbor_sets[j]:
@@ -100,6 +99,11 @@ class SemanticGraphBuilder:
 
         # add nodes and edges
         for i in range(len(self.embeddings)):
-            self.graph.add_node(i) # add each embedding as a node
             edges = [(i, j, score) for j, score in zip(neighbors_idx[i], scores[i])]
             self.graph.add_weighted_edges_from(edges)
+
+    def _initialize_nodes(self):
+        """ Add one node for every embedding """
+        for i in range(len(self.embeddings)):
+            self.graph.add_node(i)
+

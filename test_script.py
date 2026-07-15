@@ -2,6 +2,7 @@
 
 import numpy as np
 from src.organizer import BrainOrganizer
+from src.visualizer import plot_graph_with_cytoscape
 
 
 brain = BrainOrganizer.from_keep_directory("/home/keanan/brain-organizer/tests/keep/")
@@ -17,6 +18,10 @@ brain.grapher.create_threshold_graph()
 print("creating hairball graph")
 brain.grapher.create_hairball_graph()
 """
+
+# testing graph visualization
+brain.grapher.create_threshold_graph(.8)
+plot_graph_with_cytoscape(brain.grapher.graph)
 
 # testing chunking
 chunks = brain.get_chunks()
