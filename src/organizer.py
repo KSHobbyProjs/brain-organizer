@@ -148,7 +148,9 @@ class BrainOrganizer:
             graph.nodes[embedding_id].update({
                 "chunk_text" : chunk.text,
                 "note_id" : chunk.note_id,
-                "note_text" : self.notes[chunk.note_id].text # NOTE: this will likely be deprecated since it repeatedly copies the same note text for multiple nodes
+                "note_text" : self.notes[chunk.note_id].text, # NOTE: this will likely be deprecated since it repeatedly copies the same note text for multiple nodes
+                "chunk_length": len(chunk.text),
+                "note_length": len(self.notes[chunk.note_id].text)
             })
         return graph
     
