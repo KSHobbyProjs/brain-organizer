@@ -13,6 +13,7 @@ import src.formatting as formatting
 # only used for type hints
 from src.models import Note, Chunk
 from src.search import SearchResult
+import networkx as nx
 
 # constants set for display
 CUTOFF = 1000
@@ -23,23 +24,33 @@ class CmdResult(Enum):
     EXIT = 1      # break out of repl
 
 class BrainCLI:
-    def __init__(self, brain: BrainOrganizer, top_k: int):
+    def __init__(self, brain: BrainOrganizer, top_k: int=5):
         self.brain = brain
+        
+        # number of query results to output to terminal at a time
         self.top_k = top_k
 
         self.console = rich.console.Console()
 
         self._current_query_results: list[QueryResult] | None = None
         self._current_cluster_results: list[ClusterResult] | None = None
-
+        self._current_graph : nx.Graph | None = None
+    
+        # TODO: add command that allows one to change chunking, metric, and query k
+        # TODO: add command that allows one to analyze a specific cluster 
         self.commands = {
                 "cluster" : self.do_cluster,
-                "visualize": self.do_visualize,
+                "plot-clusters": self.do_plot_clusters,
+                "open-cluster-note": self.do_open_cluster_note,
+                "graph" : self.do_graph,
+                "visualize-graph" : self.visualize_graph,
                 "timeline": self.do_timeline,
                 "open" : self.do_open,
 
                 "clear" : self.do_clear,
                 "cls" : self.do_clear,
+                "change-k": self.do_change_top_k,
+                "help" : self.do_help,
 
                 "exit" : self.do_exit,
                 "q" : self.do_exit,
@@ -48,10 +59,9 @@ class BrainCLI:
         
     # ---------------------------------- COMMANDS for REPL -------------------------------
     def do_query(self, query_txt: str) -> CmdResult:
-        query_results: list[QueryResult] = self.brain.search_notes(query_txt, self.top_k)
-        # NEEDS EDITING TO FIX SEARCH RESULT CALL
+        query_results: list[QueryResult] = self.brain.search_notes(query_txt)
         self.console.print(
-                formatting.format_query_results(query_results)
+                formatting.format_query_results(query_results[:self.top_k])
                 )
         
         self._current_query_results = query_results # update cache
@@ -67,7 +77,7 @@ class BrainCLI:
         self._current_cluster_results = cluster_results # update cache
         return CmdResult.CONTINUE
 
-    def do_visualize(self, dim: str='2') -> CmdResult:
+    def do_plot_clusters(self, dim: str='2') -> CmdResult:
         dim = int(dim)
         if self._current_cluster_results:
             cluster_results = self._current_cluster_results
@@ -83,41 +93,112 @@ class BrainCLI:
         visualizer.plot_timeline(notes)
         return CmdResult.CONTINUE
 
-    def do_open(self, note_num: str='1'):
-        idx = int(note_num) - 1
+    def do_graph(self, graph_type: str='mutual-knn', **kwargs):
+        # TODO: clean this kwargs parser up a little
+        if kwargs.get("k") is not None:
+            kwargs["k"] = int(kwargs["k"])
+        
+        try:
+            graph = self.brain.create_graph(graph_type, **kwargs)
+            self._current_graph = graph
+        except Exception as e: # TODO: right now, this catches all exceptions and just prints them. possibly improve this later
+            self.console.print(f"[red]{e}[/red]")
+            return CmdResult.CONTINUE
+        
+        self.console.print(f"Successfuly created {graph_type!r} graph")
+        return CmdResult.CONTINUE
+
+    def visualize_graph(self):
+        if not self._current_graph:
+            self.console.print("[yellow]No graph loaded yet. Load graph with `:graph`[/yellow]")
+            return CmdResult.CONTINUE
+
+        success = visualizer.plot_graph_with_cytoscape(self._current_graph)
+        if not success:
+            self.console.print("[red]Cytoscape is not currently open[/red]")
+            return CmdResult.CONTINUE
+    
+        self.console.print("Successfuly sent current graph object to Cytoscan")
+        return CmdResult.CONTINUE
+       
+    def do_open(self, query_num: str='1'):
+        idx = int(query_num) - 1
         if self._current_query_results:
             try:
                 selected_query_result = self._current_query_results[idx]
             except IndexError:
-                self.console.print("[yellow]Requested note is out of range.\n Requesting more notes will be added soon.[/yellow]")
+                self.console.print("[yellow]Requested note is out of range.\n[/yellow]")
                 return CmdResult.CONTINUE
         else:
             self.console.print("[yellow]No notes loaded. Can't run open[/yellow]")
             return CmdResult.CONTINUE
 
-
-        note = selected_query_result.note
-        self.console.print(note.to_full_note())
+        self.console.print(
+                formatting.format_open_note(selected_query_result)
+                )
         return CmdResult.CONTINUE
 
-    def do_clear(self, *args) -> CmdResult:
+    def do_open_cluster_note(self, cluster_num: str='1', chunk_num: str='1'):
+        if not self._current_cluster_results:
+            self.console.print("[yellow]No clusters loaded. Cluster notes with `:cluster`[/yellow]")
+            return CmdResult.CONTINUE
+        
+        cluster_idx = int(cluster_num) - 1
+        chunk_idx = int(chunk_num) - 1
+        try:
+            selected_cluster = self._current_cluster_results[cluster_idx]
+            self.console.print(
+                    formatting.format_open_cluster_note(selected_cluster, chunk_idx)
+                    )
+        except IndexError:
+            self.console.print("[yellow]Requested cluster or note is out of range.")
+        return CmdResult.CONTINUE
+    
+    def do_clear(self) -> CmdResult:
         self.console.clear()
         return CmdResult.CONTINUE
 
-    def do_exit(self, *args) -> CmdResult:
+    def do_exit(self) -> CmdResult:
         return CmdResult.EXIT
+
+    def do_change_top_k(self, k: str) -> CmdResult:
+        self.top_k = int(k)
+        return CmdResult.CONTINUE
+
+    def do_help(self) -> CmdResult:
+        # TODO: make this help a little more helpful
+        self.console.print("The following commands are available")
+        for key in self.commands.keys():
+            self.console.print(f"\t{key}")
+
  
     def handle_commands(self, line: str) -> CmdResult:
+        # TODO: check function signature so typos don't break CLI
         """ Returns 0, 1, 2 after executing command """
-        cmd, *args = line[1:].strip().split(" ")
+        cmd, *tokens = line[1:].strip().split(" ")
+        args, kwargs = self._parse_tokens(tokens)
 
         func = self.commands.get(cmd)
         if func is None:
-            self.console.print(f"[red]{line} is not a recognized command[/red]")
+            self.console.print(f"[red]{line!r} is not a recognized command[/red]")
             return CmdResult.CONTINUE
         
-        result = func(*args)
+        result = func(*args, **kwargs)
         return result
+
+    @staticmethod
+    def _parse_tokens(tokens: list[str]) -> (list[str], dict[str,str]):
+        # TODO: (possibly) use shlex for better parsing
+        args = []
+        kwargs = {}
+        for token in tokens:
+            if "=" in token:
+                key, val = token.split("=", 1)
+                kwargs[key] = val
+            else:
+                args.append(token)
+        return args, kwargs
+
 
     # ----------------------------------- REPL ------------------------------------------
     def repl(self) -> None:
@@ -144,6 +225,12 @@ class BrainCLI:
                 break
 
 def main():
+    """
+    The REPL is meant to be the primary program. However, one can use the 
+    command line interface to quickly print basic results. Note however that
+    these results will use the default parameters when choosing --graph.
+    """
+    # TODO: parse --graph such that one can pass in args
     parser = argparse.ArgumentParser(
             prog='SemanticSearcher',
             description='Searches Keep notes for notes that best match a query semantically',
@@ -151,10 +238,11 @@ def main():
     parser.add_argument('directory', type=str)
     parser.add_argument('-q', '--query', type=str)
     parser.add_argument('-c', '--cluster', type=int)
-    parser.add_argument('-v', '--visualize', type=int)
+    parser.add_argument('-p', '--plot-clusters', type=int)
     parser.add_argument('-k', '--top-k', type=int, default=5)
     parser.add_argument('-m', '--model-name', type=str, default='sentence-transformers/all-MiniLM-L6-v2')
     parser.add_argument('-t', '--timeline', action='store_true')
+    parser.add_argument('-g', '--graph', type=str)
     
     args = parser.parse_args()
     brain = BrainOrganizer.from_keep_directory(args.directory, args.model_name)
@@ -167,12 +255,14 @@ def main():
         brain_cli.do_query(args.query)
     elif args.cluster:
         brain_cli.do_cluster(args.cluster)
-    elif args.visualize:
-        clusters = brain.cluster_notes(args.visualize)
+    elif args.plot_clusters:
+        clusters = brain.cluster_notes(args.plot_clusters)
         visualizer.plot_clusters(clusters)
     elif args.timeline:
-        notes = brain.notes
-        visualizer.plot_timeline(notes)
+        brain_cli.do_timeline()
+    elif args.graph:
+        graph = brain.create_graph(args.graph)
+        visualizer.plot_graph_with_cytoscape(graph)
     else:
         brain_cli.repl()
 

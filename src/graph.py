@@ -6,8 +6,7 @@ import numpy as np
 from sklearn.neighbors import NearestNeighbors
 
 
-# TODO: Possibly pass the metric model ('cosine') in as an argument.
-# TODO: Possibly restructure so GraphBuilder and Searcher don't have to both
+# TODO: (NOT NECESSARY; KEPT FOR POSTERITY) Possibly restructure so GraphBuilder and Searcher don't have to both
 #       instantiate a NearestNeighbor object
 
 class SemanticGraphBuilder:
@@ -23,7 +22,7 @@ class SemanticGraphBuilder:
         # add one node for each embedding (labeled by embedding id) to the graph
         self._initialize_nodes() 
 
-    def create_hairball_graph(self) -> None:
+    def create_hairball_graph(self) -> nx.Graph:
         """ 
         Creates a graph where all nodes are connected to all other nodes
         with a weight determined by the cosine similarity between embeddings.
@@ -41,8 +40,9 @@ class SemanticGraphBuilder:
         for i in range(num_embeddings-1):
             for j in range(i+1, num_embeddings):
                 self.graph.add_edge(i, j, weight=score_mat[i,j]) 
+        return self.graph
 
-    def create_knn_graph(self, k: int=5) -> None:
+    def create_knn_graph(self, k: int=5) -> nx.Graph:
         """
         Creates a graph where embeddings are nodes and node i
         is connected to node j with an edge if j is in the kNN
@@ -60,8 +60,9 @@ class SemanticGraphBuilder:
             # add nodes and edges
             edges = [(i, j, score) for j, score in zip(top_k_idx, scores[i,:])] # create edges between embedding and its neighbors
             self.graph.add_weighted_edges_from(edges)
+        return self.graph
 
-    def create_mutual_knn_graph(self, k: int=5) -> None:
+    def create_mutual_knn_graph(self, k: int=5) -> nx.Graph:
         """
         Creates a graph where embeddings are nodes and node i
         and node j are connected with an edge if both nodes are
@@ -87,8 +88,9 @@ class SemanticGraphBuilder:
                 # add an edge if embeddings are neighbors to each other
                 if i in neighbor_sets[j]:
                     self.graph.add_edge(i, j, weight=score) 
+        return self.graph
     
-    def create_threshold_graph(self, threshold: float=.5) -> None:
+    def create_threshold_graph(self, threshold: float=.5) -> nx.Graph:
         """
         Creates a graph where embeddings are nodes and node i and
         node j are connected only if they have a score > threshold
@@ -101,9 +103,9 @@ class SemanticGraphBuilder:
         for i in range(len(self.embeddings)):
             edges = [(i, j, score) for j, score in zip(neighbors_idx[i], scores[i])]
             self.graph.add_weighted_edges_from(edges)
+        return self.graph
 
     def _initialize_nodes(self):
         """ Add one node for every embedding """
         for i in range(len(self.embeddings)):
             self.graph.add_node(i)
-

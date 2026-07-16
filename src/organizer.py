@@ -10,6 +10,8 @@ Semantic searching and clustering both rely on having all the Notes and embeddin
 so this class wraps all this together, allowing a user to instantiate a model by loading / embeddings
 notes from a source (e.g., Google Keep) and calling searching and clustering algorithms on this data
 without repeatedly having to load notes or recompute embeddings
+
+Facade class; a receptionist.
 """
 
 from .parser import KeepParser
@@ -48,7 +50,7 @@ class BrainOrganizer:
 
         # helper instances
         self.parser = KeepParser(notes_dir)
-        self.embedder = Embedder(SentenceTransformer(model_name, device='cuda'))
+        self.embedder = Embedder(SentenceTransformer(model_name, device='cuda', local_files_only=True))
         self.searcher: SemanticSearcher | None = None
         self.clusterer: Clusterer | None = None
         self.grapher: SemanticGraphBuilder | None = None
@@ -63,7 +65,8 @@ class BrainOrganizer:
     @classmethod
     def from_keep_directory(cls, 
                             keep_dir: str | Path,
-                            model_name: str="sentence-transformers/all-MiniLM-L6-v2"
+                            model_name: str="sentence-transformers/all-MiniLM-L6-v2",
+                            metric: str='cosine',
                             ) -> "BrainOrganizer":
         brain = cls(keep_dir, model_name)
 
@@ -83,26 +86,25 @@ class BrainOrganizer:
                 )
         brain.chunks = chunks
 
-        # TODO: pass the metric as an argument so users can select which metric to measure embeddings with (currently cosine)
         embeddings = brain.embedder.embed_many([chunk.text for chunk in chunks])
         brain.embeddings = embeddings
 
         # create searcher
-        brain.searcher = SemanticSearcher(brain.embeddings)
+        brain.searcher = SemanticSearcher(brain.embeddings, metric=metric)
 
         # create clusterer
         brain.clusterer = Clusterer(brain.embeddings)
 
         # create grapher
-        brain.grapher = SemanticGraphBuilder(brain.embeddings)
+        brain.grapher = SemanticGraphBuilder(brain.embeddings, metric=metric)
 
         return brain
 
     # tool methods
-    def search_notes(self, query: str, k: int=1) -> list[QueryResult]:
-        # search notes for best match to query
+    def search_notes(self, query: str) -> list[QueryResult]:
+        # search notes for best match to query. list of all embeddings in order of closeness returned
         embedded_query = self.embedder.embed(query)
-        search_results: list[SearchResults] = self.searcher.search(embedded_query, k=k)
+        search_results: list[SearchResults] = self.searcher.search(embedded_query)
        
         query_results = []
         for sr in search_results:
@@ -125,6 +127,31 @@ class BrainOrganizer:
             clusters += [ClusterResult(current_cluster, notes, chunks, embeddings)]
         return clusters 
 
+    def create_graph(self, graph_type: str='mutual-knn', **kwargs):
+        """ Returns the graph object and adjusts internal state of brain.grapher """
+        graph_types = {
+                'mutual-knn' : self.grapher.create_mutual_knn_graph,
+                'hairball'   : self.grapher.create_hairball_graph,
+                'knn'        : self.grapher.create_knn_graph,
+                'threshold'  : self.grapher.create_threshold_graph
+                }
+        
+        graph_builder = graph_types.get(graph_type)
+        if graph_builder is None:
+            raise ValueError(f"Unkown graph type: {graph_type!r}")
+        graph = graph_builder(**kwargs)
+        
+        # add attr metadata to nodes
+        for embedding_id in graph.nodes:
+            chunk = self.chunks[embedding_id]
+
+            graph.nodes[embedding_id].update({
+                "chunk_text" : chunk.text,
+                "note_id" : chunk.note_id,
+                "note_text" : self.notes[chunk.note_id].text # NOTE: this will likely be deprecated since it repeatedly copies the same note text for multiple nodes
+            })
+        return graph
+    
     def get_notes(self) -> list[Note]:
         return self.notes
 

@@ -1,90 +1,98 @@
-# graph.py
-# a class to handle the graph of topics
+#!/usr/bin/env python3
+"""
+Short script that will delete all blank Keep notes from a directory
+"""
 
-import networkx as nx
+from pathlib import Path
+import json
 import numpy as np
-from sklearn.neighbors import NearestNeighbor
 
+def main(directory: str):
+    directory = Path(directory)
 
-# TODO: Possibly pass the metric model ('cosine') in as an argument.
-# TODO: Possibly restructure so GraphBuilder and Searcher don't have to both
-#       instantiate a NearestNeighbor object
+    # collect all files
+    tot_counter = 0
+    json_files = []
+    html_files = []
+    others = []
+    for file in directory.iterdir():
+        tot_counter += 1
+        if file.suffix == ".html":
+            html_files.append(file)
+        elif file.suffix == ".json":
+            json_files.append(file)
+        else:
+            others.append(file)
 
-class SemanticGraphBuilder:
-    def __init__(self, embeddings: np.ndarray):
-        """
-        Produces a graph for given embeddings
+    print(f"Total files: {tot_counter}")
+    print(f"HTML files: {len(html_files)}")
+    print(f"JSON files: {len(json_files)}")
+    print(f"Other files: {len(others)}")
 
-        """
-        self.graph = nx.Graph()
-        self.embeddings = embeddings
+    # search files for patterns
+    titled: list[bool] = []
+    has_text: list[bool] = []
+    labeled: list[bool] = []
 
-        self.nn = NearestNeighbor(metric='cosine').fit(embeddings)
+    titles = []
+    texts = []
+    labels = []
+    for file in json_files:
+        # check json metadata to see if this note is blank
+        with file.open("r", encoding="utf-8") as f:
+            data = json.load(f)
 
-    def create_hairball_graph(self) -> None:
-        """ 
-        Creates a graph where all nodes are connected to all other nodes
-        with a weight determined by the cosine similarity between embeddings.
+            title = data.get("title", "")
+            text = data.get("textContent", "")
+            labels = data.get("labels", [])
 
-        Note
-        ----
-        Not recommended unless the number of embeddings is small. 
-        """
-        # loop over all embeddings to add each embedding as a node
-        # and a weighted edge between each pair of nodes
-        from .utils import cosine_similarity_mat # the one kept use of the since deprecated utils.py functions
-        num_embeddings = len(self.embeddings)
-        for i in range(num_embeddings-1):
-            for j in range(i+1, num_embeddings):
-                embedding_i = self.embeddings[i]
-                embedding_j = self.embeddings[j]
-                
-                similarity = cosine_similarity(embedding_i, embedding_j)
-                # nodes are automatically added upon creating an edge between two
-                self.graph.add_edge(i, j, weight=similarity) 
+            if title:
+                titled.append(True)
+            else:
+                titled.append(False)
 
-    def create_knn_graph(self, k: int=5) -> None:
-        """
-        Creates a graph where embeddings are nodes and node i
-        is connected to node j with an edge if j is in the kNN
-        of node i.
-        """
-        # grab top k+1 neighbors for all embeddings (k+1 because one will (almost always) be the embedding itself)
-        # distances, neighbors have shape (n_embeddings, k+1)
-        distances, neighbors_idx = self.nn.kneighbors(self.embeddings, n_neighbors=k+1, return_distance=True)
+            if text:
+                has_text.append(True)
+            else:
+                has_text.append(False)
+
+            if labels:
+                labeled.append(True)
+            else:
+                labeled.append(False)
+
+            titles.append(title)
+            texts.append(text)
+            labels.append(labels)
+
+    print(f"Titleless notes: {titled.count(False)}") 
+    print(f"Textless notes: {has_text.count(False)}") 
+    print(f"Labelless notes: {labeled.count(False)}") 
+
+    text_and_title = [a & b for a, b in zip(titled, has_text)]
+    text_and_label = [a & b for a, b in zip(labeled, has_text)]
+
+    no_text_and_title = [b & (not a) for a, b in zip(has_text, titled)]
+    print(f"No text but title: {no_text_and_title.count(True)}")
+
+    text_and_no_title = [a & (not b) for a, b in zip(has_text, titled)]
+    print(f"Has text but no title: {text_and_no_title.count(True)}")
+
+    text_and_no_labels = [a & (not b) for a, b in zip(has_text, labeled)]
+    print(f"Has text but no labels: {text_and_no_labels.count(True)}")
+
+    no_text_and_labels = [(not a) & b for a, b in zip(has_text, labeled)]
+    print(f"No text but labels: {no_text_and_labels.count(True)}")
+
+    no_text_no_title_no_labels = [(not a) & (not b) & (not c) for a, b, c in zip(has_text, titled, labeled)]
+    print(f"Nothing: {no_text_no_title_no_labels.count(True)}")
+
+    # delete textless notes
+    for i, file in enumerate(json_files):
+        if not has_text[i]:
+
         
-        for i, embedding in self.embeddings:
-            # exclude the neighbor that's just embedding itself.
-            mask = neighbors_idx[i,:] != i
-            # grab top k neighbors for embedding i
-            top_k_idx = neighbors_idx[i, mask]
-            scores = 1 - distances[i, mask]
-            
-            # add nodes and edges
-            self.graph.add_node(i)
-            edges = [(i, idx, score) for idx, score in zip(top_k_idx, scores)]
-            edges_
 
-
-    def create_mutual_knn_graph(self, k: int=5) -> None:
-        """
-        Creates a graph where embeddings are nodes and node i
-        and node j are connected with an edge if both nodes are
-        members of the kNN of the other.
-        """
-        # grab cosine similarity between all pairs of embeddings
-        similarity_mat = cosine_similarity_mat(self.embeddings)
-
-        for i, embedding in enumerate(self.embeddings):
-            self.graph.add_node(i)
-            # find kNN
-            top_k_idx = np.argsort(similarity_mat[i,:])[::-1][:k]
-
-            for k in top_k_idx:
-                # check if embeddings[k] has embedding as a kNN as well
-                
-                = cosine_similarity_to_group(self.embeddings[k], self.embeddings)
-                top_k_for_embedding_k
-
-    def create_threshold_graph(self, threshold: float=.5) -> None:
-        raise NotImplementedError
+if __name__=="__main__":
+    directory = "./tests/keep/"
+    main(directory)

@@ -62,8 +62,16 @@ def plot_timeline(notes: list[Note]):
     ax.hist(times, bins=20, rwidth=.9)
     plt.show()
 
+class CytoscapeNotOpenError(Exception):
+    pass
+
 def plot_graph_with_cytoscape(graph: nx.Graph):
+    try:
+        p4c.cytoscape_ping()
+    except Exception:
+        return False
     p4c.create_network_from_networkx(graph, title="Semantic Note Graph")
     p4c.layouts.layout_network('force-directed')
     p4c.create_view()
+    return True
 

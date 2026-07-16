@@ -15,7 +15,7 @@ class SearchResult:
     # embedding: np.ndarray maybe it needs this in the future
 
 class SemanticSearcher: 
-    def __init__(self, embeddings: np.ndarray):
+    def __init__(self, embeddings: np.ndarray, metric='cosine'):
         """
         Takes a list of embeddings, finds the top embeddings
         closest to query embedding.
@@ -27,18 +27,19 @@ class SemanticSearcher:
         """
 
         self.embeddings = embeddings
-        self.nn = NearestNeighbors(metric='cosine').fit(embeddings)
+        self.nn = NearestNeighbors(metric=metric).fit(embeddings)
 
-    def search(self, query: np.ndarray, k: int=5) -> list[SearchResult]:
+    def search(self, query: np.ndarray, k: int | None = None) -> list[SearchResult]:
         """
-        Finds the top k embeddings closest to the query embedding based on some metric (cosine).
+        Finds the k embeddings closest to the query embedding based on some metric (cosine).
+        If k is None, returns all embeddings ranked by similarity.
 
         Parameters
         ----------
         query : np.ndarray
             Embedded query text. Shape (d,) for d features.
         k : int
-            Number of neighbors to find.
+            Number of neighbors to find. Default is all.
 
         Results
         -------
@@ -49,10 +50,16 @@ class SemanticSearcher:
         -----
         This function assumes that query is a single embedded vector.
         """
-        # compute k nearest neighbors (sklearn expects a list of queries, so reshape query)
+        if k is None:
+            k = len(self.embeddings)
+        # compute k nearest neighbors 
         distances, top_k_idx = self.nn.kneighbors(query.reshape(1, -1), n_neighbors=k, return_distance=True)
-        scores = 1 - distances.squeeze()   # sklearn outputs 1 - cos(theta) for distance. score is cos(theta)
-        top_k_idx = top_k_idx.squeeze()
+        
+        # sklearn returns results with shape (query_count, neighbor_count)
+        # sklearn cosine distance = 1 - cosine similarity
+        # convert distances back to similarity score
+        scores = 1 - distances[0]  
+        top_k_idx = top_k_idx[0]
         
         retrieved_results = [
                 SearchResult(
