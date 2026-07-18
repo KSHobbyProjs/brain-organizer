@@ -83,3 +83,18 @@ def cosine_similarity_mat(embeddings: np.ndarray) -> np.ndarray:
     scores = embeddings @ embeddings.T
     return scores
 
+def compute_centroid(embeddings: np.ndarray) -> np.ndarray:
+    """ 
+    Compute the centroid of a given set of embeddings.
+
+    Parameters
+    ---------
+    embeddings : np.ndarray
+        Array of embeddings. Shape (n_embeddings, n_features).
+
+    Returns
+    -------
+    np.ndarray
+        Centroid of embeddings. Shape (n_features,)
+    """
+    return np.mean(embeddings, axis=0)

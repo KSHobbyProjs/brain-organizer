@@ -24,7 +24,10 @@ def format_query_results(query_results: list[QueryResult]) -> Group:
 def format_cluster_results(cluster_results: list[ClusterResult]) -> Group:
     renderables = [f"[blue]Clusters[/blue]", Rule()]
     for cluster in cluster_results:
-        renderables.extend([f"[bold cyan]Cluster # {cluster.cluster_id+1} ({len(cluster.chunks)} chunks)[/bold cyan]"])
+        renderables.extend([(
+                f"[bold cyan]Cluster # {cluster.cluster_id+1} ({len(cluster.chunks)} chunks, "
+                f"Topic: {cluster.representative_text}, Radius: {cluster.radius}, Density: {cluster.density})"
+            )])
         renderables.extend([f"[white]{c.text}[/white]\n" for c in cluster.chunks[:CHUNKS_PER_CLUSTER]])
         renderables.extend([Rule()])
     

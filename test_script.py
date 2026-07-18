@@ -55,3 +55,15 @@ print("-----------------------")
 print(chunks[np.random.randint(0, len(chunks))].text)
 print("-----------------------")
 print(chunks[np.random.randint(0, len(chunks))].text)
+
+# Testing clusterer stuff
+from src.clusterer import Clusterer
+embeds = np.random.rand(3000, 300)
+a = Clusterer(embeds)
+a.fit_clusters(5)
+print(a.get_centroids()[0].shape)
+print(a.to_distance_space().shape)
+print(a.get_representative_embeddings())
+print(a.compute_radius())
+print(a.compute_density())
+

@@ -28,19 +28,26 @@ from pathlib import Path
 from dataclasses import dataclass
 from sentence_transformers import SentenceTransformer
 
+from functools import wraps
+
 @dataclass
 class QueryResult:
     score: float
     note: Note
     chunk: Chunk
-    embedding: np.ndarray
 
 @dataclass
 class ClusterResult:
     cluster_id: int
     notes: list[Note]
     chunks: list[Chunk]
-    embeddings: list[np.ndarray]
+    representative_text: str
+    radius: float
+    density: float
+
+class ModelNotLoadedError(RuntimeError):
+    """ Raised when a method is called before notes are loaded in model with `from_keep_directory` or similar """
+    pass
 
 class BrainOrganizer:
     def __init__(self, notes_dir: str | Path, model_name: str):
@@ -60,6 +67,17 @@ class BrainOrganizer:
         self.notes: list[Note] = []
         self.embeddings: np.ndarray | None = None
         self.chunks: list[Chunk] = []
+
+    def requires_loading(method):
+        @wraps(method)
+        def wrapper(self, *args, **kwargs):
+            if self.embeddings is None:
+                raise ModelNotLoadedError(
+                        f"{self.__class__.__name__} must be loaded before "
+                        f"{method.__name__} is called. Call `from_keep_directory()` or similar first."
+                    )
+            return method(self, *args, **kwargs)
+        return wrapper
   
     # load brain (parse and embed) from Keep notes
     @classmethod
@@ -101,32 +119,55 @@ class BrainOrganizer:
         return brain
 
     # tool methods
+    @requires_loading
     def search_notes(self, query: str) -> list[QueryResult]:
         # search notes for best match to query. list of all embeddings in order of closeness returned
         embedded_query = self.embedder.embed(query)
         search_results: list[SearchResults] = self.searcher.search(embedded_query)
-       
+      
+        # package results into a QueryResult
         query_results = []
         for sr in search_results:
-            embedding = self.embeddings[sr.embedding_idx]
             chunk = self.chunks[sr.embedding_idx]
             note = self.notes[chunk.note_id]
             score = sr.score
-            query_results += [QueryResult(score, note, chunk, embedding)] 
+            query_results += [QueryResult(score, note, chunk)] 
         return query_results
 
+    @requires_loading
     def cluster_notes(self, num_clusters: int=5) -> list[ClusterResult]:
-        # cluster embeddings into `num_clusters` clusters
-        embedding_idx_to_cluster_id = self.clusterer.get_clusters(num_clusters)
+        # cluster embeddings into `num_clusters` clusters and take stats
+        embedding_idx_to_cluster_id = self.clusterer.fit_clusters(num_clusters)
+        rep_idxs = self.clusterer.get_representative_embeddings()
+        radii = self.clusterer.compute_radius()
+        densities = self.clusterer.compute_density()
 
+        # package results and analysis into a ClusterResult
         clusters = []
         for current_cluster in range(num_clusters):
             chunks = [self.chunks[i] for i, idx in enumerate(embedding_idx_to_cluster_id) if idx == current_cluster]
             notes = [self.notes[chunk.note_id] for chunk in chunks]
-            embeddings = [self.embeddings[i] for i, idx in enumerate(embedding_idx_to_cluster_id) if idx == current_cluster]
-            clusters += [ClusterResult(current_cluster, notes, chunks, embeddings)]
+
+            representative_text = self.notes[self.chunks[rep_idxs[current_cluster]].note_id].title
+            radius, density = radii[current_cluster], densities[current_cluster]
+            clusters += [ClusterResult(
+                                    current_cluster,
+                                    notes, chunks,
+                                    representative_text,
+                                    radius,
+                                    density
+                                )]
         return clusters 
 
+    # TODO: feed_to_LLM
+    def feed_to_LLM(self):
+        """ 
+        Use an LLM to come up with topic summaries to label clusters
+        among other things
+        """
+        raise NotImplementedError
+
+    @requires_loading
     def create_graph(self, graph_type: str='mutual-knn', **kwargs):
         """ Returns the graph object and adjusts internal state of brain.grapher """
         graph_types = {
@@ -154,8 +195,10 @@ class BrainOrganizer:
             })
         return graph
     
+    @requires_loading
     def get_notes(self) -> list[Note]:
         return self.notes
 
+    @requires_loading
     def get_chunks(self) -> list[Chunk]:
         return self.chunks
