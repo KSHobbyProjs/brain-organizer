@@ -41,5 +41,9 @@ Dependencies include `numpy`, `scipy`, `scikit`, `sentence-transformers`, `torch
 - [x] Milestone 5: embeddings -> clusters
 - [x] Milestone 6: clusters -> visualization
 - [x] Milestone 7: timeline
-- [] Milestone 8: AI summaries
-- [] Milestone 9: package / documentation
+- [x] Milestone 8: graphs
+- [x] Milestone 9: visualizing graphs with Cytoscape
+- [/] Milestone 10: finish graph and cluster statistics
+- [] Milestone 11: GUI
+- [] Milestone 12: LLM topic recognition and summaries
+- [] Milestone 13: documentation

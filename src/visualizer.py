@@ -16,6 +16,7 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
 def plot_clusters(cluster_results: list[ClusterResult], dim: int=2) -> None:
+    # TODO Fix the label portion (right now, it just repeatedly prints the same label)
     """
     Plots a PCA visualization of created clusters
 
@@ -35,7 +36,7 @@ def plot_clusters(cluster_results: list[ClusterResult], dim: int=2) -> None:
     # convert list of ClusterResults to embeddings and color_idx
     embeddings = np.concatenate([r.embeddings for r in cluster_results], axis=0)
     cluster_idx = [r.cluster_id for r in cluster_results for _ in range(len(r.embeddings))]
-
+    labels = [r.representative_text for r in cluster_results]
     pca_projected_embeddings = PCA(n_components=dim).fit_transform(embeddings)
 
     # take the (x, y) or (x, y, z) for each embedding
@@ -43,13 +44,20 @@ def plot_clusters(cluster_results: list[ClusterResult], dim: int=2) -> None:
 
     if dim == 2:
         fig, ax = plt.subplots()
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
     elif dim ==3: 
         fig = plt.figure()
         ax = fig.add_subplot(projection='3d')
+        ax.set_zticks([-1, 1])
+        ax.set_frame_on(False)
     else:
         raise ValueError(f"dim can only be 2 or 3. got {dim}")
 
-    ax.scatter(*z, c=cluster_idx)
+    ax.set_xticks([-1, 1])
+    ax.set_yticks([-1, 1])
+    ax.scatter(*z, c=cluster_idx, label=labels)
+    # ax.legend()
     plt.show()
     
 def plot_timeline(notes: list[Note]):
@@ -61,9 +69,6 @@ def plot_timeline(notes: list[Note]):
     fig, ax = plt.subplots()
     ax.hist(times, bins=20, rwidth=.9)
     plt.show()
-
-class CytoscapeNotOpenError(Exception):
-    pass
 
 def plot_graph_with_cytoscape(graph: nx.Graph):
     try:

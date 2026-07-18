@@ -39,6 +39,7 @@ class QueryResult:
 @dataclass
 class ClusterResult:
     cluster_id: int
+    embeddings: np.ndarray
     notes: list[Note]
     chunks: list[Chunk]
     representative_text: str
@@ -145,14 +146,15 @@ class BrainOrganizer:
         # package results and analysis into a ClusterResult
         clusters = []
         for current_cluster in range(num_clusters):
-            chunks = [self.chunks[i] for i, idx in enumerate(embedding_idx_to_cluster_id) if idx == current_cluster]
+            mask = embedding_idx_to_cluster_id == current_cluster
+            embeddings = self.embeddings[mask]
+            chunks = np.array(self.chunks)[mask]
             notes = [self.notes[chunk.note_id] for chunk in chunks]
-
             representative_text = self.notes[self.chunks[rep_idxs[current_cluster]].note_id].title
             radius, density = radii[current_cluster], densities[current_cluster]
             clusters += [ClusterResult(
                                     current_cluster,
-                                    notes, chunks,
+                                    embeddings, notes, chunks,
                                     representative_text,
                                     radius,
                                     density
@@ -182,6 +184,8 @@ class BrainOrganizer:
             raise ValueError(f"Unkown graph type: {graph_type!r}")
         graph = graph_builder(**kwargs)
         
+        # TODO: do analysis on graph 
+
         # add attr metadata to nodes
         for embedding_id in graph.nodes:
             chunk = self.chunks[embedding_id]

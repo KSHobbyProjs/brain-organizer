@@ -21,7 +21,10 @@ class SemanticGraphBuilder:
 
         # add one node for each embedding (labeled by embedding id) to the graph
         self._initialize_nodes() 
+        self._num_nodes: int = len(embeddings)
+        self._num_edges: int | None = None
 
+    # -------------------------------------- Create Graph Methods ------------------------------------------------------------
     def create_hairball_graph(self) -> nx.Graph:
         """ 
         Creates a graph where all nodes are connected to all other nodes
@@ -109,3 +112,6 @@ class SemanticGraphBuilder:
         """ Add one node for every embedding """
         for i in range(len(self.embeddings)):
             self.graph.add_node(i)
+
+    # ------------------------------------------------------------ Stat / Analysis Methods --------------------------------
+
