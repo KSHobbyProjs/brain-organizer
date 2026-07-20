@@ -5,6 +5,7 @@
 import argparse
 import rich.console
 from enum import Enum
+from functools import wraps
 
 from src.organizer import BrainOrganizer, QueryResult, ClusterResult
 import src.visualizer as visualizer
@@ -34,7 +35,7 @@ class BrainCLI:
 
         self._current_query_results: list[QueryResult] | None = None
         self._current_cluster_results: list[ClusterResult] | None = None
-        self._current_graph : nx.Graph | None = None
+        self._visualizer_on: bool = False
     
         # TODO: add command that allows one to change chunking, metric, and query k
         # TODO: add command that allows one to analyze a specific cluster 
@@ -43,7 +44,8 @@ class BrainCLI:
                 "plot-clusters": self.do_plot_clusters,
                 "open-cluster-note": self.do_open_cluster_note,
                 "graph" : self.do_graph,
-                "visualize-graph" : self.visualize_graph,
+                "graph-community" : self.do_get_communities,
+                "visualize-graph" : self.do_visualize_graph,
                 "timeline": self.do_timeline,
                 "open" : self.do_open,
 
@@ -93,6 +95,16 @@ class BrainCLI:
         visualizer.plot_timeline(notes)
         return CmdResult.CONTINUE
 
+    def needs_graph(method):
+        @wraps(method)
+        def wrapper(self, *args, **kwargs):
+            if not self.brain.get_graph():
+                self.console.print("[yellow]No graph loaded yet. Load graph with `:graph`[/yellow]")
+                return CmdResult.CONTINUE
+            else:
+                return method(self, *args, **kwargs)
+        return wrapper
+
     def do_graph(self, graph_type: str='mutual-knn', **kwargs):
         # TODO: clean this kwargs parser up a little
         if kwargs.get("k") is not None:
@@ -100,25 +112,39 @@ class BrainCLI:
         
         try:
             graph = self.brain.create_graph(graph_type, **kwargs)
-            self._current_graph = graph
         except Exception as e: # TODO: right now, this catches all exceptions and just prints them. possibly improve this later
             self.console.print(f"[red]{e}[/red]")
             return CmdResult.CONTINUE
         
         self.console.print(f"Successfuly created {graph_type!r} graph")
         return CmdResult.CONTINUE
+    
+    @needs_graph
+    def do_get_communities(self, resolution: str='.5'):
+        # updates graph with community information
+        self.brain.label_louvain_communities(float(resolution))
 
-    def visualize_graph(self):
-        if not self._current_graph:
-            self.console.print("[yellow]No graph loaded yet. Load graph with `:graph`[/yellow]")
-            return CmdResult.CONTINUE
-
-        success = visualizer.plot_graph_with_cytoscape(self._current_graph)
+        # send information to cytoscape so color nodes are colored by community
+        if not self._visualizer_on:
+            self.do_visualize_graph()
+        visualizer.change_cytoscape_coloring_basedon_communities(self.brain.get_graph())
+        return CmdResult.CONTINUE
+   
+   # NOTE: This fails if cytoscape is closed mid program. 
+   #       If Cytoscape is closed, self._visaulizer_on will
+   #       still be set to true, and any function that calls
+   #       the visualizer will raise an error. Maybe this is
+   #       a hint to separate the two commands and handle
+   #       the visualizer better (py4cytoscape might just belong here)
+    @needs_graph
+    def do_visualize_graph(self):
+        success = visualizer.plot_graph_with_cytoscape(self.brain.get_graph())
         if not success:
             self.console.print("[red]Cytoscape is not currently open[/red]")
             return CmdResult.CONTINUE
     
         self.console.print("Successfuly sent current graph object to Cytoscan")
+        self._visualizer_on=True
         return CmdResult.CONTINUE
        
     def do_open(self, query_num: str='1'):

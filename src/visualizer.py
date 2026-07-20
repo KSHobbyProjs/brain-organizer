@@ -49,8 +49,8 @@ def plot_clusters(cluster_results: list[ClusterResult], dim: int=2) -> None:
     elif dim ==3: 
         fig = plt.figure()
         ax = fig.add_subplot(projection='3d')
+        #ax.set_frame_on(False)
         ax.set_zticks([-1, 1])
-        ax.set_frame_on(False)
     else:
         raise ValueError(f"dim can only be 2 or 3. got {dim}")
 
@@ -70,6 +70,9 @@ def plot_timeline(notes: list[Note]):
     ax.hist(times, bins=20, rwidth=.9)
     plt.show()
 
+# TODO: change this so that it doesn't implicitly rely on nx.Graph
+#       i.e., add an adapt layer that converts the graph into 
+#       my own representation, then pass that here
 def plot_graph_with_cytoscape(graph: nx.Graph):
     try:
         p4c.cytoscape_ping()
@@ -79,4 +82,23 @@ def plot_graph_with_cytoscape(graph: nx.Graph):
     p4c.layouts.layout_network('force-directed')
     p4c.create_view()
     return True
+
+def change_cytoscape_coloring_basedon_communities(graph: nx.Graph, label='community_id'):
+    """ This method assumes that there's already a graph with community labels present """
+    num_communities = np.max([graph.nodes[i][label] for i in range(len(graph.nodes))]) + 1
+    colors = [
+            "#%02x%02x%02x" % tuple(int(255*x) for x in plt.cm.hsv(i / num_communities)[:3])
+            for i in range(num_communities)
+        ]
+
+    p4c.set_node_color_mapping(
+            table_column="community_id",
+            table_column_values=list(range(num_communities)),
+            colors=colors
+        )
+
+                        
+   
+
+
 

@@ -5,17 +5,23 @@ import networkx as nx
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 
+from functools import wraps
+
+"""
+A class that owns a graph given embeddings as nodes.
+"""
 
 # TODO: (NOT NECESSARY; KEPT FOR POSTERITY) Possibly restructure so GraphBuilder and Searcher don't have to both
 #       instantiate a NearestNeighbor object
 
 class SemanticGraphBuilder:
-    def __init__(self, embeddings: np.ndarray, metric: str='cosine'):
+    def __init__(self, embeddings: np.ndarray, metric: str='cosine', seed=42):
         """
         Produces a graph for given embeddings
         """
         self.graph = nx.Graph()
         self.embeddings = embeddings
+        self.seed = seed
 
         self.nn = NearestNeighbors(metric=metric).fit(embeddings)
 
@@ -114,4 +120,73 @@ class SemanticGraphBuilder:
             self.graph.add_node(i)
 
     # ------------------------------------------------------------ Stat / Analysis Methods --------------------------------
+    # find communities in the graph structure using Louvain
+    def label_communities(self, resolution=1) -> list[set]:
+        # TODO: add method as an argument so Louvain isn't the only possibility
+        # TODO: implement hierarchical structure by repeatedly running Louvain
+        #       at different resolutions.
+        """
+        Gets communities of a graph using Louvain. Louvain works by maximizing
+        modularity. Modularity is the probability that a randomly selected node
+        lies in the cluster minus the probability that a randomly selected node
+        lies in the cluster given that edges are distributed randomly. 
+
+        Louvain works in two phases:
+        (1) assigns each node it's own community,
+        greedily moving each node to neighborhing communities to find optimal
+        modularity increase. Repeating until no move increases modularity.
+        (2) Create a new graph with nodes being the current communitites, and repeat
+        phase one.
+
+        Parameters
+        ----------
+        resolution: int, optional
+            Default is 1. Any resolution lower than 1 favors
+            larger communities (coarse). Any resolution higher 
+            than 1 favors smaller communities (fine)
+
+        Returns
+        -------
+        list[set]
+            The list of sets where each set includes all nodes in a given cluster.
+        """
+        communities = nx.community.louvain_communities(
+                        G=self.graph,
+                        seed=self.seed,
+                        resolution=resolution,
+                        weight="weight"
+                    )
+        
+        for i, community in enumerate(communities):
+            for node in community:
+                self.graph.nodes[node]["community_id"] = i
+
+        return communities 
+
+    # get nodes forming a hierarchy structure in the graph
+    def get_hierarchy(self):
+        pass
+
+    # get bridge nodes / nodes that connect many groups
+    def get_betweeness_centrality(self):
+        pass
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

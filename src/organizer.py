@@ -29,6 +29,7 @@ from dataclasses import dataclass
 from sentence_transformers import SentenceTransformer
 
 from functools import wraps
+import networkx as nx # just imported for datasetting
 
 @dataclass
 class QueryResult:
@@ -136,7 +137,10 @@ class BrainOrganizer:
         return query_results
 
     @requires_loading
-    def cluster_notes(self, num_clusters: int=5) -> list[ClusterResult]:
+    def cluster_notes(self, num_clusters: int) -> list[ClusterResult]:
+        # TODO: split this so that getting clusters is split from doing analysis.
+        #       otherwise, if this beefs up, cluster_notes takes long and longer to run,
+        #       getting information the user might not need
         # cluster embeddings into `num_clusters` clusters and take stats
         embedding_idx_to_cluster_id = self.clusterer.fit_clusters(num_clusters)
         rep_idxs = self.clusterer.get_representative_embeddings()
@@ -170,7 +174,7 @@ class BrainOrganizer:
         raise NotImplementedError
 
     @requires_loading
-    def create_graph(self, graph_type: str='mutual-knn', **kwargs):
+    def create_graph(self, graph_type: str, **kwargs):
         """ Returns the graph object and adjusts internal state of brain.grapher """
         graph_types = {
                 'mutual-knn' : self.grapher.create_mutual_knn_graph,
@@ -184,8 +188,6 @@ class BrainOrganizer:
             raise ValueError(f"Unkown graph type: {graph_type!r}")
         graph = graph_builder(**kwargs)
         
-        # TODO: do analysis on graph 
-
         # add attr metadata to nodes
         for embedding_id in graph.nodes:
             chunk = self.chunks[embedding_id]
@@ -198,6 +200,12 @@ class BrainOrganizer:
                 "note_length": len(self.notes[chunk.note_id].text)
             })
         return graph
+
+    @requires_loading
+    def label_louvain_communities(self, resolution):
+        """ Runs Louvain community detection and labels each node with its community """
+        self.grapher.label_communities(resolution)
+
     
     @requires_loading
     def get_notes(self) -> list[Note]:
@@ -206,3 +214,7 @@ class BrainOrganizer:
     @requires_loading
     def get_chunks(self) -> list[Chunk]:
         return self.chunks
+    
+    @requires_loading
+    def get_graph(self) -> nx.Graph:
+        return self.grapher.graph
