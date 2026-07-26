@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Brain Organizer</title>
+        <link href="/static/css/style.css" rel="stylesheet"/>
+    </head>
+    <body class="graph-mode"> 
+        <header>
+            <h1>Brain Organizer</h1>
+        </header>
+
+        <main class='main-body'>
+
+            <aside class='tools'>
+                <h2>Tools</h2>
+                
+                <button id='all-notes'>All Notes</button>
+                <button>Cluster</button>
+                <button>Graph</button>
+            </aside>
+            
+            <section class='results-window'>
+                <div class='results-title'>
+                    <h2>Note View</h2>
+                    <form class='search-box'>
+                        <input type="text" id="query" placeholder='Search Notes...'>
+                        <!-- <button>Submit</button> -->
+                    </form>
+                </div>
+                <div id='results-content'></div>
+            </section>
+
+        </main>
+    </body>
+    <script type="module" src="/static/js/app.js"></script>
+</html>
