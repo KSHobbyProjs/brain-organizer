@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import datetime
+
 from src.organizer import BrainOrganizer
 
 from fastapi import FastAPI
@@ -18,5 +20,18 @@ def home():
 
 @app.get("/allnotes")
 def get_all_notes():
-    return [note.to_dict() for note in brain.get_notes()]
+    notes = brain.get_notes()
+    sorted_notes = sorted(
+            notes,
+            key=lambda x: x.created_time,
+            reverse=True
+        )
+    return [note.to_dict() for note in sorted_notes]
+
+@app.get("/query")
+# the q var must be named q because that's what's sent in the
+# fetch request in api.js
+def search_notes(q: str):
+    query_results = brain.search_notes(q);
+    return [query.note.to_dict() for query in query_results]
 

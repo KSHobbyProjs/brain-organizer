@@ -22,15 +22,20 @@
             <section class='results-window'>
                 <div class='results-title'>
                     <h2>Note View</h2>
-                    <form class='search-box'>
+                    <form id='search-box'>
                         <input type="text" id="query" placeholder='Search Notes...'>
                         <!-- <button>Submit</button> -->
                     </form>
                 </div>
                 <div id='results-content'></div>
             </section>
-
         </main>
+        <div id='modal' class='hidden'>
+            <div class='modal-box'>
+                <button id='close-modal'>x</button>
+                <div id='modal-content'></div>
+            </div>
+        </div>
     </body>
     <script type="module" src="/static/js/app.js"></script>
 </html>

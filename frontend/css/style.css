@@ -5,8 +5,6 @@
     --surface-color: #1A1A1A;
 }
 
-
-
 body {
     font-family: "Courier New", Arial, sans-serif; 
     background-color: var(--bg-color);
@@ -57,15 +55,15 @@ header {
 }
 
 .tools button {
-    flex: 1;
-    width: 50%;
+    width: 75%;
     min-height: 5rem;
     background-color: var(--accent-color);
     border-color: var(--accent-color);
     border-radius: 15px;
 
     
-    font-size: .5em;
+    font-size: 1em;
+    color: var(--text-primary);
     text-align: center;
 }
 
@@ -90,7 +88,7 @@ header {
     gap: 1rem;
 }
 
-.graph-mode .search-box {
+.graph-mode #search-box {
     flex: 1;
 
     display: flex;
@@ -102,6 +100,12 @@ header {
 #query {
     width: 50%;
     height: 75%;
+    border-radius 50%;
+    border-color: transparent;
+
+    font-size: 1rem;
+    color: var(--text-primary);
+    background-color: var(--surface-color);
 }
 
 .graph-mode #results-content { 
@@ -113,8 +117,59 @@ header {
     overflow-y: auto;
 
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 1rem;  
+}
+
+#modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+
+    width: 100vw;
+    height: 100vh;
+
+    background: rgba(0, 0, 0, 0.5);
+
+    display: flex;
+    justify-content: center;
+    align-items: center;    
+}
+
+.modal-box {
+    position: relative;
+    width: 70%;
+    height: 70%;
+    border: 1px solid var(--accent-color);
+    border-radius: 15px;
+
+    font-size: 1rem;
+
+    display: flex;
+    background-color: var(--surface-color);
+}
+
+#close-modal {
+    position: absolute;
+    right: 0.75rem;
+    top: 0.75rem;
+    border: transparent;
+
+    background-color: transparent;
+    font-size: 1.5rem;
+    color: var(--accent-color);
+    cursor: pointer;
+}
+
+#modal-content { 
+    margin: 1rem;
+    margin-top: 2rem;
+    text-align: left;
+}
+
+#modal.hidden {
+    display: none;
 }
 
 .note {

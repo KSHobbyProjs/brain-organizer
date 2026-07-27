@@ -7,7 +7,53 @@ import json
 import datetime
 from .models import Note
 
-def parse_keep_timestamp(timestamp_usec: str | None) -> datetime.datetime | None:
+def _validate_dir(directory: str | Path):
+    directory = Path(directory)
+    # fail early if path given isn't a directory
+    if not directory.is_dir():
+        raise ValueError(f"{keep_dir} is not a valid directory.")
+    return directory
+
+def parse_notes(directory: str | Path, parser: str):
+    try:
+        parser_func = PARSERS[parser]
+    except KeyError:
+        raise ValueError(f"'{parser}' not a known parser model.")
+
+    directory = _validate_dir(directory)
+    notes: list[Note] = []
+    for file in directory.iterdir():
+        if file.suffix == ".json":
+            note = parser_func(file)
+            notes.append(note)
+    return notes
+
+def _create_note_from_keepjson(keepjson: Path) -> Note:
+    with keepjson.open("r", encoding="utf-8") as f:
+        keepjson_data = json.load(f)
+
+    title = keepjson_data.get("title", "")
+    text = keepjson_data.get("textContent", "")
+    created_time = _parse_keep_timestamp(keepjson_data.get("createdTimestampUsec"))
+    edited_time = _parse_keep_timestamp(keepjson_data.get("userEditedTimestampUsec"))
+    labels = [label["name"] for label in keepjson_data.get("labels", [])]
+    is_trashed = keepjson_data.get("isTrashed", False)
+    is_pinned = keepjson_data.get("isPinned", False)
+    is_archived = keepjson_data.get("isArchived", False)
+
+    note = Note(
+            title=title,
+            text=text,
+            created_time=created_time,
+            edited_time=edited_time,
+            labels=labels,
+            is_pinned=is_pinned,
+            is_archived=is_archived,
+            is_trashed=is_trashed
+            )
+    return note
+
+def _parse_keep_timestamp(timestamp_usec: str | None) -> datetime.datetime | None:
     if timestamp_usec is None:
         return None
 
@@ -15,59 +61,25 @@ def parse_keep_timestamp(timestamp_usec: str | None) -> datetime.datetime | None
             int(timestamp_usec) / 1_000_000
             )
 
-class KeepParser:
-    def __init__(self, keep_directory: str | Path):
-        self.keep_dir = Path(keep_directory)
-        self.keepjson_files: list[Path] = []
-        self.notes: list[Note] = []
+def _create_note_from_llmjson(llmjson: Path) -> Note:
+    with llmjson.open("r", encoding="utf-8") as f:
+        llmjson_data = json.load(f)
 
-        # fail early if path given isn't a directory
-        if not self.keep_dir.is_dir():
-            raise ValueError(f"{self.keep_dir} is not a valid directory.")
+    title = llmjson_data.get("title")
+    date = llmjson_data.get("date")
+    text = llmjson_data.get("text")
+    labels = llmjson_data.get("labels")
+    return Note(
+            title=title,
+            text=text,
+            created_time=date,
+            labels=labels
+        )
 
-    def get_keepjson_files(self) -> list[Path]:
-       keepjson_files = [
-               file 
-               for file in self.keep_dir.iterdir()
-               if file.suffix == ".json"
-            ]
-       self.keepjson_files = keepjson_files
-       return keepjson_files
+PARSERS = {
+        "keep" : _create_note_from_keepjson,
+        "llm" : _create_note_from_llmjson,
+    }
 
-    def create_notes(self) -> list[Note]:
-        if self.keepjson_files == []:
-            raise RuntimeError(f"no files have been loaded into the parser. use `get_keepjson_files()` or similar first.")
-        notes = []
-        for file in self.keepjson_files:
-            note = self.create_note_from_keepjson(file)
-            notes.append(note)
 
-        self.notes = notes
-        return notes
-
-    @staticmethod
-    def create_note_from_keepjson(keepjson: Path) -> Note:
-        with keepjson.open("r", encoding="utf-8") as f:
-            keepjson_data = json.load(f)
-
-        title = keepjson_data.get("title", "")
-        text = keepjson_data.get("textContent", "")
-        created_time = parse_keep_timestamp(keepjson_data.get("createdTimestampUsec"))
-        edited_time = parse_keep_timestamp(keepjson_data.get("userEditedTimestampUsec"))
-        labels = [label["name"] for label in keepjson_data.get("labels", [])]
-        is_trashed = keepjson_data.get("isTrashed", False)
-        is_pinned = keepjson_data.get("isPinned", False)
-        is_archived = keepjson_data.get("isArchived", False)
-
-        note = Note(
-                title=title,
-                text=text,
-                created_time=created_time,
-                edited_time=edited_time,
-                labels=labels,
-                is_pinned=is_pinned,
-                is_archived=is_archived,
-                is_trashed=is_trashed
-                )
-        return note
 

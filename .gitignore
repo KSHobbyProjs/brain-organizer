@@ -8,5 +8,5 @@ __pycache__/
 temp_code.py
 
 examples/
-tests/
+tests/keep
 logs/

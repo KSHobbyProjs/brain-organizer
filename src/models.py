@@ -9,12 +9,12 @@ class Note:
     """
     title: str
     text: str
-    created_time: datetime.date | None
-    edited_time: datetime.date | None
-    labels: list[str]
-    is_pinned: bool
-    is_archived: bool
-    is_trashed: bool 
+    created_time: datetime.date | None = None
+    edited_time: datetime.date | None = None
+    labels: list[str] | None = None
+    is_pinned: bool | None = None
+    is_archived: bool | None = None
+    is_trashed: bool | None = None
 
     # get time that note was created
     def get_created_time(self) -> datetime.date | None:

@@ -14,7 +14,7 @@ without repeatedly having to load notes or recompute embeddings
 Facade class; a receptionist.
 """
 
-from .parser import KeepParser
+from . import parser
 from .models import Note, Chunk
 from .embedder import Embedder  
 from .search import SemanticSearcher, SearchResult
@@ -52,13 +52,11 @@ class ModelNotLoadedError(RuntimeError):
     pass
 
 class BrainOrganizer:
-    def __init__(self, notes_dir: str | Path, model_name: str):
+    def __init__(self, model_name: str):
         # sentence transformer model
         self.model_name = model_name
-        self.notes_dir = notes_dir
 
         # helper instances
-        self.parser = KeepParser(notes_dir)
         self.embedder = Embedder(SentenceTransformer(model_name, device='cuda', local_files_only=True))
         self.searcher: SemanticSearcher | None = None
         self.clusterer: Clusterer | None = None
@@ -80,19 +78,22 @@ class BrainOrganizer:
                     )
             return method(self, *args, **kwargs)
         return wrapper
-  
-    # load brain (parse and embed) from Keep notes
-    @classmethod
-    def from_keep_directory(cls, 
-                            keep_dir: str | Path,
-                            model_name: str="sentence-transformers/all-MiniLM-L6-v2",
-                            metric: str='cosine',
-                            ) -> "BrainOrganizer":
-        brain = cls(keep_dir, model_name)
 
-        # parse keep notes into a list of Note (domain objects)
-        brain.parser.get_keepjson_files()
-        notes: list[Note] = brain.parser.create_notes()
+# TODO: add better search
+# TODO: add lmm parsing and lmm note dissecting 
+# TODO: add config 
+    # -------------------------------------- from methods -----------------------------------------------------
+    @classmethod
+    def from_directory(
+            cls,
+            directory: str,
+            model_name: str="sentence-transformers/all-MiniLM-L6-v2",
+            metric='cosine',
+            chunk_method='smart_paragraphs',
+            parser_method='llm'
+        ):
+        notes: list[Note] = parser.parse_notes(directory, parser=parser_method)
+        brain = cls(model_name=model_name)
         brain.notes = notes
 
         # chunk Note objects into list of Chunk (objects with content ready to be passed to embedder)
@@ -100,7 +101,7 @@ class BrainOrganizer:
         # TODO: pass these as arguments so the user can select which chunking algorithm
         chunks: list[Chunk] = chunking.chunk_notes(
                 notes,
-                chunking.chunk_by_paragraphs_smart,
+                chunk_func=chunk_method,
                 include_context=False, 
                 soft_min_len=300, max_len=1500
                 )
@@ -117,7 +118,6 @@ class BrainOrganizer:
 
         # create grapher
         brain.grapher = SemanticGraphBuilder(brain.embeddings, metric=metric)
-
         return brain
 
     # tool methods

@@ -6,11 +6,16 @@ import math as m
 
 def chunk_notes(
         notes: list[Note],
-        chunk_func: Callable[[Note], list[str]],
+        chunk_func: str,
         include_context: bool = False,
         *args,
         **kwargs
         ) -> list[Chunk]:
+
+    try:
+        chunk_func = CHUNK_METHODS[chunk_func]
+    except KeyError:
+        raise ValueError(f"Unknown chunking method: '{chunk_func}'")
     
     chunks = []
     for note_id, note in enumerate(notes):
@@ -170,3 +175,14 @@ def _sentence_splitter(paragraph: str, max_len: int) -> list[str]:
     if current_chunk:
         chunks.append(current_chunk.strip())
     return chunks
+
+
+CHUNK_METHODS = {
+        "smart_paragraphs" : chunk_by_paragraphs_smart,
+        "fullnote" : chunk_by_fullnote,
+        "paragaphs": chunk_by_paragraphs,
+        "token_number": chunk_by_token_number,
+        "ai": chunk_by_AI_summary,
+    }
+
+
