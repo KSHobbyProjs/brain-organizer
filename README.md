@@ -30,7 +30,6 @@ Dependencies include `numpy`, `scipy`, `scikit`, `sentence-transformers`, `torch
     - `--timeline`        : produces a histogram of note creation over time.
     - ...
 - If run without any command arguments, runs a REPL where the natural mode accepts queries and prints the top notes matching that query, and other functions are available with commands of the style: `:cluster 5`.
-
 ---
 
 ### Milestones
@@ -43,7 +42,9 @@ Dependencies include `numpy`, `scipy`, `scikit`, `sentence-transformers`, `torch
 - [x] Milestone 7: timeline
 - [x] Milestone 8: graphs
 - [x] Milestone 9: visualizing graphs with Cytoscape
-- [/] Milestone 10: finish graph and cluster statistics
+- [X] Milestone 10: finish graph and cluster statistics
 - [] Milestone 11: GUI
+    - [] Milestone 11.1: FastAPI to get all notes
+    - [] Milestone 11.2: 
 - [] Milestone 12: LLM topic recognition and summaries
 - [] Milestone 13: documentation

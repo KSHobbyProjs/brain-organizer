@@ -80,9 +80,6 @@ class BrainOrganizer:
             return method(self, *args, **kwargs)
         return wrapper
 
-# TODO: add better search
-# TODO: add lmm parsing and lmm note dissecting 
-# TODO: add config 
     # -------------------------------------- from methods -----------------------------------------------------
     @classmethod
     def from_directory(
