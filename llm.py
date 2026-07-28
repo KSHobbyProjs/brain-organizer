@@ -3,6 +3,7 @@
 from pathlib import Path
 import ollama
 import json
+import datetime
 
 def create_note():
     response = ollama.chat(
@@ -35,7 +36,7 @@ def create_note():
             Schema:
             {
                 "title": "",
-                "date": "",
+                "date": "%Y-%m-%d",
                 "text": "",
                 "labels": []
             }
@@ -48,13 +49,38 @@ def create_note():
             ],
             format="json"
         )
-    return json.loads(response["message"]["content"])
+    return response["message"]["content"]
+
+def _validate_note(result):
+    try:
+        result = json.loads(result)
+        date = datetime.datetime.fromisoformat(result["date"])
+        result["date"] = date.date().isoformat()
+        result["title"] = str(result["title"])
+        result["text"] = str(result["text"])
+        result["labels"] = [str(l) for l in result["labels"]]
+        return result
+    except Exception as e:
+        print(e)
+        return False
+
+
+
+
 
 if __name__=="__main__":
-    path = Path("tests/lmm-notes")
-    
+    path = Path("tests/llm-notes")
+   
+    count = 100
     for i in range(100):
         file_name = path / f"{i}.json"
+       
+        result = _validate_note(create_note())
+        if not result:
+            count -= 1
+            continue
+        
         with open(file_name, "w") as file:
-            result = create_note()
             json.dump(result, file)
+
+    print(f"created {count} files.")

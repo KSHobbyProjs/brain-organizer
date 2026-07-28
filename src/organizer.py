@@ -36,6 +36,7 @@ class QueryResult:
     score: float
     note: Note
     chunk: Chunk
+    chunk_pos: (int, int) # the starting and ending index of the chunk in note
 
 @dataclass
 class ClusterResult:
@@ -120,6 +121,14 @@ class BrainOrganizer:
         brain.grapher = SemanticGraphBuilder(brain.embeddings, metric=metric)
         return brain
 
+    @staticmethod
+    def _get_chunk_pos(chunk: Chunk, note: Note):
+        note_content = note.to_full_note()
+        chunk_content = chunk.text
+        start_idx = note_content.find(chunk_content)
+        end_idx = start_idx + len(chunk_content)
+        return start_idx, end_idx
+
     # tool methods
     @requires_loading
     def search_notes(self, query: str) -> list[QueryResult]:
@@ -133,7 +142,8 @@ class BrainOrganizer:
             chunk = self.chunks[sr.embedding_idx]
             note = self.notes[chunk.note_id]
             score = sr.score
-            query_results += [QueryResult(score, note, chunk)] 
+            chunk_min, chunk_max = self._get_chunk_pos(chunk, note)
+            query_results += [QueryResult(score, note, chunk, (chunk_min, chunk_max))] 
         return query_results
 
     @requires_loading

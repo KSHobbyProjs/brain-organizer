@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
-brain = BrainOrganizer.from_keep_directory(keep_dir='tests/keep/')
+brain = BrainOrganizer.from_directory('tests/llm-notes/')
 
 
 app = FastAPI()
@@ -33,5 +33,12 @@ def get_all_notes():
 # fetch request in api.js
 def search_notes(q: str):
     query_results = brain.search_notes(q);
-    return [query.note.to_dict() for query in query_results]
+    results = []
+    for query in query_results:
+        result = {
+                "note" : query.note.to_dict(),
+                "chunkPos": query.chunk_pos
+            }
+        results.append(result)
+    return results
 

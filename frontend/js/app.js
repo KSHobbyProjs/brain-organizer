@@ -1,7 +1,7 @@
 // coordinates all js modules
 
 import { getAllNotes, searchNotes } from "./api.js"
-import { renderNotes, renderFullNote } from "./notes.js"
+import { renderNotes, renderFullNote, renderSearchResults, renderFullSearchResult } from "./notes.js"
 
 
 
@@ -15,6 +15,12 @@ const openNote = (note) => {
     console.log("Opening note");
     modalContainer.classList.remove("hidden");
     renderFullNote(note, modalContent);
+};
+
+const openSearchResult = (searchResult) => {
+    console.log("Opening search result.");
+    modalContainer.classList.remove("hidden");
+    renderFullSearchResult(searchResult, modalContent);
 };
 
 // close modal if 'x' is pressed
@@ -40,7 +46,7 @@ searchBox.addEventListener("submit", async (event) => {
 
     const query = queryInput.value;
     console.log("Query submitted", query);
-    const result = await searchNotes(query);
+    const searchResults = await searchNotes(query);
     console.log("Query results recieved");
-    renderNotes(result, resultsContainer, openNote);
+    renderSearchResults(searchResults, resultsContainer, openSearchResult);
 });

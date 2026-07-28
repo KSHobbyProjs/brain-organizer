@@ -3,6 +3,7 @@
 # Extension to parsing other data can be added.
 from pathlib import Path
 import json
+import datetime
 
 import datetime
 from .models import Note
@@ -11,7 +12,7 @@ def _validate_dir(directory: str | Path):
     directory = Path(directory)
     # fail early if path given isn't a directory
     if not directory.is_dir():
-        raise ValueError(f"{keep_dir} is not a valid directory.")
+        raise ValueError(f"{directory} is not a valid directory.")
     return directory
 
 def parse_notes(directory: str | Path, parser: str):
@@ -66,7 +67,7 @@ def _create_note_from_llmjson(llmjson: Path) -> Note:
         llmjson_data = json.load(f)
 
     title = llmjson_data.get("title")
-    date = llmjson_data.get("date")
+    date = datetime.date.fromisoformat(llmjson_data.get("date"))
     text = llmjson_data.get("text")
     labels = llmjson_data.get("labels")
     return Note(

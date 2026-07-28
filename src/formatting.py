@@ -37,8 +37,7 @@ def format_open_note(query_result: QueryResult) -> str:
     note_content = query_result.note.to_full_note()
     chunk_text = query_result.chunk.text
 
-    start_idx = note_content.find(chunk_text)
-    end_idx = start_idx + len(chunk_text)
+    start_idx, end_idx = query_result.chunk_pos
 
     full_note = (
             f"[blue]Score: {query_result.score}[/blue]\n"
@@ -52,8 +51,7 @@ def format_open_cluster_note(cluster_result: ClusterResult, chunk_idx: int) -> s
     chunk_text = cluster_result.chunks[chunk_idx].text
     note_content = cluster_result.notes[chunk_idx].to_full_note()
 
-    start_idx = note_content.find(chunk_text)
-    end_idx = start_idx + len(chunk_text)
+    start_idx, end_idx = query_result.chunk_pos
 
     full_note = (
             f"[blue]Note {chunk_idx+1} in Cluster {cluster_result.cluster_id+1}[/blue]\n"
