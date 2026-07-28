@@ -22,3 +22,12 @@ export const searchNotes = async (query) => {
     }
     return await response.json();
 };
+
+export const clusterNotes = async (numClusters) => {
+    const response = await fetch(`/cluster?num_clusters=${numClusters}`);
+
+    if (!response.ok) { 
+        throw new Error("Failed to cluster notes.");
+    }
+    return await response.json();
+};

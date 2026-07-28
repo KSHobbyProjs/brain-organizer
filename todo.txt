@@ -1,2 +1,0 @@
-# TODO: lmm note dissecting 
-# TODO: add config 

@@ -69,7 +69,7 @@ def _validate_note(result):
 
 
 if __name__=="__main__":
-    path = Path("tests/llm-notes")
+    path = Path("../tests/llm-notes")
    
     count = 100
     for i in range(100):

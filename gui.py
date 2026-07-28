@@ -42,3 +42,18 @@ def search_notes(q: str):
         results.append(result)
     return results
 
+@app.get("/cluster")
+def cluster_notes(num_clusters: int):
+    cluster_results = brain.cluster_notes(num_clusters)
+    results = []
+    for cluster in cluster_results:
+        result = {
+                "clusterID" : cluster.cluster_id,
+                "representativeText" : cluster.representative_text,
+                "radius" : float(cluster.radius),
+                "density" : float(cluster.density),
+                "notes" : [note.to_dict() for note in cluster.notes],
+                "chunks" : [chunk.text for chunk in cluster.chunks]
+            }
+        results.append(result)
+    return results

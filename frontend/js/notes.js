@@ -112,5 +112,8 @@ export const renderSearchResults = (searchResults, container, onClick) => {
 
         container.appendChild(noteDiv);
     }
+};
 
+export const renderClusters = (clusterResult, container, onClick) => {
+    console.log("reached renderer");
 };
