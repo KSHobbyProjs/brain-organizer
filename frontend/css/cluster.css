@@ -1,0 +1,36 @@
+/* cluster.css */
+
+.cluster-controls {
+    position: absolute;
+    right: 0.75em;
+    top: 0.75em;
+    
+    display: flex;
+}
+
+.cluster-controls button {
+    font-size: 1rem;
+    background-color: var(--surface-color);
+    border-color: var(--accent-color);
+    border-radius: 25%;
+    color: var(--accent-color);
+}
+
+.cluster-analysis {
+    display: flex;
+    gap: 1rem;
+    flex-direction: row;
+}
+
+.cluster-repnote {
+    flex: 1;
+}
+
+.cluster-notes{
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem; 
+}
+
+

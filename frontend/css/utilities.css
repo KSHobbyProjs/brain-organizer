@@ -1,0 +1,10 @@
+/* utilities.css */
+
+.hidden {
+    display: none;
+}
+
+mark {
+    background-color: transparent;
+    color: var(--accent-color);
+}

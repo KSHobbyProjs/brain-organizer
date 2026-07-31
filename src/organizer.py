@@ -36,7 +36,6 @@ class QueryResult:
     score: float
     note: Note
     chunk: Chunk
-    chunk_pos: (int, int) # the starting and ending index of the chunk in note
 
 @dataclass
 class ClusterResult:
@@ -45,6 +44,7 @@ class ClusterResult:
     notes: list[Note]
     chunks: list[Chunk]
     representative_text: str
+    representative_note: Note
     radius: float
     density: float
 
@@ -118,14 +118,7 @@ class BrainOrganizer:
         brain.grapher = SemanticGraphBuilder(brain.embeddings, metric=metric)
         return brain
 
-    @staticmethod
-    def _get_chunk_pos(chunk: Chunk, note: Note):
-        note_content = note.to_full_note()
-        chunk_content = chunk.text
-        start_idx = note_content.find(chunk_content)
-        end_idx = start_idx + len(chunk_content)
-        return start_idx, end_idx
-
+    
     # tool methods
     @requires_loading
     def search_notes(self, query: str) -> list[QueryResult]:
@@ -139,8 +132,7 @@ class BrainOrganizer:
             chunk = self.chunks[sr.embedding_idx]
             note = self.notes[chunk.note_id]
             score = sr.score
-            chunk_min, chunk_max = self._get_chunk_pos(chunk, note)
-            query_results += [QueryResult(score, note, chunk, (chunk_min, chunk_max))] 
+            query_results += [QueryResult(score, note, chunk)] 
         return query_results
 
     @requires_loading
@@ -161,14 +153,18 @@ class BrainOrganizer:
             embeddings = self.embeddings[mask]
             chunks = np.array(self.chunks)[mask]
             notes = [self.notes[chunk.note_id] for chunk in chunks]
-            representative_text = self.notes[self.chunks[rep_idxs[current_cluster]].note_id].title
             radius, density = radii[current_cluster], densities[current_cluster]
+
+            representative_note = self.notes[self.chunks[rep_idxs[current_cluster]].note_id]
+            representative_text = representative_note.title
+
             clusters += [ClusterResult(
                                     current_cluster,
                                     embeddings, notes, chunks,
                                     representative_text,
+                                    representative_note,
                                     radius,
-                                    density
+                                    density,
                                 )]
         return clusters 
 

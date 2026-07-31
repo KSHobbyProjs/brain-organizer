@@ -2,38 +2,134 @@
 <html>
     <head>
         <title>Brain Organizer</title>
-        <link href="/static/css/style.css" rel="stylesheet"/>
+        <link href="/static/css/main.css" rel="stylesheet"/>
     </head>
-    <body class="graph-mode"> 
+    <body class="note-mode"> 
         <header>
             <h1>Brain Organizer</h1>
         </header>
 
         <main class='main-body'>
 
-            <aside class='tools'>
+            <aside class='toolbar'>
                 <h2>Tools</h2>
-                
-                <button id='all-notes'>All Notes</button>
-                <button id='cluster'>Cluster</button>
-                <button id='graph'>Graph</button>
+                <button id='load-notes-button'>Load Notes</button>
+                <button id='note-view-button'>Note View</button>
+                <button id='cluster-button'>Cluster</button>
+                <button id='graph-button'>Graph</button>
             </aside>
             
             <section class='results-window'>
                 <div class='results-title'>
-                    <h2>Note View</h2>
-                    <form id='search-box'>
-                        <input type="text" id="query" placeholder='Search Notes...'>
+                    <h2 id='mode-title'>Note View</h2>
+                    <form id='search-box' class="search-box">
+                        <input type="text" id="query" class="search-input" placeholder='Search Notes...'>
                         <!-- <button>Submit</button> -->
                     </form>
                 </div>
-                <div id='results-content'></div>
+                <div id='results-content' class="results-content"></div>
             </section>
         </main>
-        <div id='modal' class='hidden'>
+        <div id='modal' class='hidden modal'>
             <div class='modal-box'>
-                <button id='close-modal'>x</button>
-                <div id='modal-content'></div>
+                <button id='close-modal-button' class='close-modal-button'>x</button>
+                <div id='modal-content' class='modal-content'></div>
+            </div>
+        </div>
+        <div id='settings-modal' class='hidden settings-modal'>
+            <div class='modal-box'>
+                <button id='browse'>
+                    Choose note folder
+                </button>
+                <input
+                    type="file"
+                    id="notes-directory"
+                    webkitdirectory
+                    multiple
+                    hidden
+                >
+                <form id='load-settings-form'>
+                    <label>
+                        Parser:
+                        <select id="parser">
+                            <option value="keep">Google Keep</option>
+                            <option value="llm">LLM</option>
+                            <option value="obsidian">Obsidian</option>
+                        </select>
+                    </label>
+
+                    <label>
+                        Embedding model:
+                        <select id="embedder">
+                            <option value="sentence-transformers/all-MiniLM-L6-v2">
+                                MiniLM
+                            </option>
+                            <option value="BAAI/bge-small-en-v1.5">
+                                BGE Small
+                            </option>
+                        </select>
+                    </label>
+
+                    <label>
+                        Chunking method:
+                        <select id="chunker">
+                            <option value="smart_paragraphs">
+                                By Smart Paragraphs
+                            </option>
+                            <option value="paragraphs">
+                                By Paragraph
+                            </option>
+                            <option value="llm">
+                                By LLM
+                            </option>
+                            <option value="token_number">
+                                By fixed length
+                            </option>
+                            <option value="fullnote">
+                                No Chunking
+                            </option>
+                        </select>
+                    </label>
+                    <label for='chunking-context'>
+                        Include Context
+                    </label>
+                    <input type='checkbox' id='chunking-context' value='context'>
+                    <div id='chunk-by-token-options' class='hidden'>
+                        <label for="chunk-size">Chunk length:</label>
+                        <input
+                            type="number"
+                            id="chunk-size"
+                            value="250"
+                            min="50"
+                            max="5000"
+                        >
+                    </div>
+                    <div id='smart-paragraphs-options' class="hidden">
+                        <label for="chunk-min">Chunk soft min:</label>
+                        <label for="chunk-max">Chunk max:</label>
+                        <input
+                            type="number"
+                            id="chunk-min"
+                            value="50"
+                            min="1"
+                            max="5000"
+                        >
+                        <input
+                            type="number"
+                            id="chunk-max"
+                            value="1000"
+                            min="2"
+                            max="5001"
+                        >  
+                    </div>
+                    <label>
+                        Metric:
+                        <select id="metric">
+                            <option value="cosine">Cosine</option>
+                            <option value="euclidean">Euclidean</option>
+                        </select>
+                    </label>
+                </form>
             </div>
         </div>
     </body>

@@ -1,0 +1,28 @@
+/* layout.css */
+
+body {
+    height: 100vh;                                   /* how the box model behaves */
+    margin: 1rem;
+    
+    font-family: "Courier New", Arial, sans-serif;   /* how content behaves */
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+
+    display: flex;                                   /* how children behave */
+    flex-direction: column;
+}
+
+header {
+    /* border: 1px solid var(--accent-color); */
+
+    font-size: 1.5rem;
+    text-align: center;
+}
+
+.main-body {
+    flex: 1;        /* fill remaining space after header */
+    min-height: 0;
+ 
+    display: flex;
+    gap: 1rem;
+}

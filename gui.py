@@ -3,6 +3,7 @@
 import datetime
 
 from src.organizer import BrainOrganizer
+from src.schemas import query_results_to_response, cluster_results_to_response
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
@@ -33,27 +34,9 @@ def get_all_notes():
 # fetch request in api.js
 def search_notes(q: str):
     query_results = brain.search_notes(q);
-    results = []
-    for query in query_results:
-        result = {
-                "note" : query.note.to_dict(),
-                "chunkPos": query.chunk_pos
-            }
-        results.append(result)
-    return results
+    return query_results_to_response(query_results)
 
 @app.get("/cluster")
 def cluster_notes(num_clusters: int):
     cluster_results = brain.cluster_notes(num_clusters)
-    results = []
-    for cluster in cluster_results:
-        result = {
-                "clusterID" : cluster.cluster_id,
-                "representativeText" : cluster.representative_text,
-                "radius" : float(cluster.radius),
-                "density" : float(cluster.density),
-                "notes" : [note.to_dict() for note in cluster.notes],
-                "chunks" : [chunk.text for chunk in cluster.chunks]
-            }
-        results.append(result)
-    return results
+    return cluster_results_to_response(cluster_results)
