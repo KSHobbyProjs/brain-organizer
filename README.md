@@ -1,5 +1,5 @@
 # Brain Organizer
-### still developing
+(Still developing)
 <img src="docs/cover.png" width=900>
 Semantic search and visualization tool for personal notes. Uses sentence-transformer embeddings to convert notes into a semantic vector space, allowing notes to be searched, clustered, and visualized based on meaning rather than exact text.
 
