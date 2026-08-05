@@ -31,3 +31,28 @@ export const clusterNotes = async (numClusters) => {
     }
     return await response.json();
 };
+
+export const loadSettings = async (settings) => {
+    const response = await fetch("/loadnotes", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(settings)
+    });
+
+    if (!response.ok) {
+        throw new Error("Failed to load notes.");
+    }
+    return await response.json();
+};
+
+export const graphNotes = async () => {
+    const response = await fetch("/graphnotes");
+
+    if (!response.ok) {
+        throw new Error("Failed to graph notes.");
+    }
+    return await response.json();
+};
+

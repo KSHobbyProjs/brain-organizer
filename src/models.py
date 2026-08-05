@@ -56,5 +56,6 @@ class Chunk:
     """
     note_id: int
     text: str
+    span: tuple[int, int]
 
 

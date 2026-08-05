@@ -1,0 +1,54 @@
+/* settings.css */
+
+.settings {
+    width: 25rem;
+    height: auto;
+    margin-top: 1rem;
+    flex-direction: column;
+    position: relative;
+    
+    font-size: 1rem;
+    text-align: center;
+
+    align-items: center;
+    overflow-y: scroll;
+}
+
+.settings-form {
+    font-size: 1em;
+    
+    display: flex;
+    flex-direction: column;
+    gap: 1.5em;
+
+    align-items: center;
+}
+
+.settings-content {
+    margin: 1rem;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.settings-content select {
+    border-color: transparent;
+    background-color: var(--text-primary);
+    color: var(--surface-color);
+    border-radius: 15px;
+}
+
+.settings-content button {
+    width: 50%;
+    min-height: 3rem;
+    border-color: transparent;
+    background-color: var(--text-primary);
+    color: var(--surface-color);
+    border-radius: 15px;
+}
+
+.browse-button-container {
+    width: 100%;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    align-items: center;
+}

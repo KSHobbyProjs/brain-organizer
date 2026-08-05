@@ -1,14 +1,12 @@
 // Render functions for search results
 
-export const renderFullSearchResult = (searchResult, container, maxHighlights=Infinity) => {
+export const renderFullSearchResult = (searchResult, container) => {
     console.log(`Score: ${searchResult.chunks[0].score}`);
     console.log(`Num chunks: ${searchResult.chunks.length}`);
     container.innerHTML = "";
 
     const note = searchResult.note;
-    const chunks = [...searchResult.chunks]
-        .slice(0, maxHighlights)                // only render top N
-        .sort((a, b) => a.span[0] - b.span[0]); // sort by chunk position
+    const chunks = searchResult.chunks.sort((a, b) => a.span[0] - b.span[0]); // sort by chunk position
 
     const noteTitle = document.createElement("h3");
     noteTitle.textContent = note.title;
@@ -22,6 +20,8 @@ export const renderFullSearchResult = (searchResult, container, maxHighlights=In
     let cursor = 0; 
     for (let i = 0; i < chunks.length; i++) {
         const [start, end] = chunks[i].span;
+        console.log(start);
+        console.log(end);
         html += note.text.slice(cursor, start);
         html += "<mark>";
         html +=  note.text.slice(start, end);

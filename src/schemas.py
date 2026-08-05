@@ -37,7 +37,7 @@ def query_results_to_response(query_results: list[QueryResult]):
                     chunks=[]
                 )
         responses[idx].chunks.append( ChunkData(
-                            span=_get_chunk_pos(result.chunk, result.note),
+                            span=result.chunk.span,
                             score=float(result.score)
                     ) )
 
@@ -79,14 +79,6 @@ def _get_unique_notes(chunks: list[Chunk], notes: list[Note]) -> list[Response]:
                     chunks=[]
                 )
         responses[idx].chunks.append( ChunkData(
-                span=_get_chunk_pos(chunk, note)
+                span=chunk.span
             ) )
     return list(responses.values())
-
-def _get_chunk_pos(chunk: Chunk, note: Note):
-    note_content = note.to_full_note()
-    chunk_content = chunk.text
-    start_idx = note_content.find(chunk_content)
-    end_idx = start_idx + len(chunk_content)
-    return start_idx, end_idx
-   

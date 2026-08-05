@@ -13,10 +13,12 @@
 
             <aside class='toolbar'>
                 <h2>Tools</h2>
-                <button id='load-notes-button'>Load Notes</button>
-                <button id='note-view-button'>Note View</button>
-                <button id='cluster-button'>Cluster</button>
-                <button id='graph-button'>Graph</button>
+                <div class="toolbar-button-container">
+                    <button id='load-notes-button'>Load Notes</button>
+                    <button id='note-view-button'>Note View</button>
+                    <button id='cluster-button'>Cluster</button>
+                    <button id='graph-button'>Graph</button>
+                </div>
             </aside>
             
             <section class='results-window'>
@@ -36,100 +38,104 @@
                 <div id='modal-content' class='modal-content'></div>
             </div>
         </div>
-        <div id='settings-modal' class='hidden settings-modal'>
-            <div class='modal-box'>
-                <button id='browse'>
-                    Choose note folder
-                </button>
-                <input
-                    type="file"
-                    id="notes-directory"
-                    webkitdirectory
-                    multiple
-                    hidden
-                >
-                <form id='load-settings-form'>
-                    <label>
-                        Parser:
-                        <select id="parser">
-                            <option value="keep">Google Keep</option>
-                            <option value="llm">LLM</option>
-                            <option value="obsidian">Obsidian</option>
-                        </select>
-                    </label>
-
-                    <label>
-                        Embedding model:
-                        <select id="embedder">
-                            <option value="sentence-transformers/all-MiniLM-L6-v2">
-                                MiniLM
-                            </option>
-                            <option value="BAAI/bge-small-en-v1.5">
-                                BGE Small
-                            </option>
-                        </select>
-                    </label>
-
-                    <label>
-                        Chunking method:
-                        <select id="chunker">
-                            <option value="smart_paragraphs">
-                                By Smart Paragraphs
-                            </option>
-                            <option value="paragraphs">
-                                By Paragraph
-                            </option>
-                            <option value="llm">
-                                By LLM
-                            </option>
-                            <option value="token_number">
-                                By fixed length
-                            </option>
-                            <option value="fullnote">
-                                No Chunking
-                            </option>
-                        </select>
-                    </label>
-                    <label for='chunking-context'>
-                        Include Context
-                    </label>
-                    <input type='checkbox' id='chunking-context' value='context'>
-                    <div id='chunk-by-token-options' class='hidden'>
-                        <label for="chunk-size">Chunk length:</label>
+        <div id='settings-modal' class='modal hidden'>
+            <div class='settings modal-box'>
+                <button id="close-settings-button" class='close-modal-button'>x</button>
+                <h2 class="modal-title">Load Notes</h2>
+                <div class='settings-content'>
+                    <div class="browse-button-container">
+                        <button id='browse' type="button">
+                            Choose note folder </button>
                         <input
-                            type="number"
-                            id="chunk-size"
-                            value="250"
-                            min="50"
-                            max="5000"
+                            type="text"
+                            id="notes-directory"
                         >
                     </div>
-                    <div id='smart-paragraphs-options' class="hidden">
-                        <label for="chunk-min">Chunk soft min:</label>
-                        <label for="chunk-max">Chunk max:</label>
-                        <input
-                            type="number"
-                            id="chunk-min"
-                            value="50"
-                            min="1"
-                            max="5000"
-                        >
-                        <input
-                            type="number"
-                            id="chunk-max"
-                            value="1000"
-                            min="2"
-                            max="5001"
-                        >  
-                    </div>
-                    <label>
-                        Metric:
-                        <select id="metric">
-                            <option value="cosine">Cosine</option>
-                            <option value="euclidean">Euclidean</option>
-                        </select>
-                    </label>
-                </form>
+                    <form id='settings-form' class='settings-form'>
+                       <label>
+                            Parser:
+                            <select id="parser">
+                                <option value="keep">Google Keep</option>
+                                <option value="llm">LLM</option>
+                                <option value="obsidian">Obsidian</option>
+                            </select>
+                        </label>
+
+                        <label>
+                            Embedding model:
+                            <select id="embedder">
+                                <option value="sentence-transformers/all-MiniLM-L6-v2">
+                                    MiniLM
+                                </option>
+                                <option value="BAAI/bge-small-en-v1.5">
+                                    BGE Small
+                                </option>
+                            </select>
+                        </label>
+                        <label>
+                            Chunking method:
+                            <select id="chunker">
+                                <option value="smart_paragraphs">
+                                    By Smart Paragraphs
+                                </option>
+                                <option value="paragraphs">
+                                    By Paragraph
+                                </option>
+                                <option value="llm">
+                                    By LLM
+                                </option>
+                                <option value="token_number">
+                                    By fixed length
+                                </option>
+                                <option value="fullnote">
+                                    No Chunking
+                                </option>
+                            </select>
+                        </label>
+                       <div class='chunk-options hidden' data-chunker="token_number">
+                            <label for="chunk-size">Chunk length:</label>
+                            <input
+                                type="number"
+                                id="chunk-size"
+                                value="250"
+                                min="50"
+                                max="5000"
+                            >
+                        </div>
+                        <div class="chunk-options hidden" data-chunker="smart_paragraphs">
+                            <label for="chunk-min">(Soft) Min:</label>
+                            <input
+                                type="number"
+                                id="chunk-min"
+                                value="50"
+                                min="1"
+                                max="5000"
+                            >
+                            <label for="chunk-max">Max:</label>
+                            <input
+                                type="number"
+                                id="chunk-max"
+                                value="1000"
+                                min="2"
+                                max="5001"
+                            >  
+                        </div>
+                        <div class="context-checkbox-containter">
+                            <label for='chunking-context'>
+                                + Context
+                            </label>
+                            <input type='checkbox' id='chunking-context' value='context'>
+                        </div> 
+                        <label>
+                            Metric:
+                            <select id="metric">
+                                <option value="cosine">Cosine</option>
+                                <option value="euclidean">Euclidean</option>
+                            </select>
+                        </label>
+                        <button id="load-button" class="load-button" type="submit">Load</button>
+                    </form>
+                </div>
             </div>
         </div>
     </body>

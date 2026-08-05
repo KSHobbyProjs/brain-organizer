@@ -5,5 +5,7 @@
     background-color: var(--surface-color);
     border-radius: 15px;
  
-    overflow-wrap: break-word;  
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    max-height: 50rem;
 }

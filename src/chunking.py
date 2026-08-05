@@ -1,8 +1,15 @@
 # a module to chunk notes in different ways
 from .models import Note, Chunk
 from collections.abc import Callable
+from dataclasses import dataclass
 
 import math as m
+
+@dataclass
+class TextSpan():
+    text: str
+    start: int
+    end: int
 
 def chunk_notes(
         notes: list[Note],
@@ -19,9 +26,11 @@ def chunk_notes(
     
     chunks = []
     for note_id, note in enumerate(notes):
-        note_chunks = chunk_func(note, *args, **kwargs)
-        
-        for chunk_text in note_chunks:
+        chunks_spans = chunk_func(note, *args, **kwargs)
+ 
+        for chunk_span in chunks_spans:
+            chunk_text = chunk_span.text.strip()
+            span = (chunk_span.start, chunk_span.end)
             if include_context:
                 labels_str = " ".join(note.labels)
                 chunk_text = (
@@ -29,24 +38,42 @@ def chunk_notes(
                         f"Labels: {labels_str}\n\n"
                         f"{chunk_text}"
                     )
-            chunks.append(Chunk(note_id, chunk_text))
+            chunks.append(Chunk(note_id, chunk_text, span))
     return chunks
 
 # -------------------------------------- Chunking methods ----------------------------------------
-def chunk_by_fullnote(note: Note) -> list[str]:
-    return [note.text]
+def chunk_by_fullnote(note: Note) -> list[TextSpan]:
+    return [TextSpan(note.text, start=0, end=len(note.text))]
 
-def chunk_by_paragraphs(note: Note) -> list[str]:
-    return note.text.strip().split("\n\n")
+def chunk_by_paragraphs(note: Note) -> list[TextSpan]:
+    textspans = []
+    start = 0
 
-def chunk_by_token_number(note: Note, num_tokens: int=50) -> list[str]:
-    note_text = note.text.strip()
-    return [note_text[j:j+num_tokens] for j in range(0, len(note_text), num_tokens)]
+    for chunk in note.text.split("\n\n"):
+        end = start + len(chunk) 
+        textspans.append( TextSpan(chunk, start, end) )
+        start = end + 2 # TODO: this is hardcoded; better to use regex
+
+    return textspans
+
+# this is poorly named: it's chunking by character #, not token #, but it'll take too long to make the change
+def chunk_by_token_number(note: Note, num_tokens: int=50) -> list[TextSpan]:
+    textspans = []
+    start = 0
+
+    for j in range(0, len(note.text), num_tokens):
+        chunk = note.text[j:j+num_tokens]
+
+        end = start + len(chunk)
+        textspans.append( TextSpan(chunk, start, end) )
+        start = end
+
+    return textspans
 
 def chunk_by_AI_summary():
     raise NotImplementedError
 
-def chunk_by_paragraphs_smart(note: Note, soft_min_len: int=300, max_len: int=1500) -> list[str]:
+def chunk_by_paragraphs_smart(note: Note, soft_min_len: int=300, max_len: int=1500) -> list[TextSpan]:
     """ 
     Chunk note text into sections while preserving paragraph boundaries.
 
@@ -80,30 +107,41 @@ def chunk_by_paragraphs_smart(note: Note, soft_min_len: int=300, max_len: int=15
         but it was far too messy, and the tradeoff in chunk quality is small.
     """
     # split note text into paragraphs
-    paragraphs = note.text.strip().split("\n\n")
+    paragraphs = note.text.split("\n\n")
+    start = 0
+    textspans = []
+    for paragraph in paragraphs:
+        end = start + len(paragraph)
+        textspans.append( TextSpan(paragraph, start, end) )
+        start = end + 2
+
     # process paragraphs by splitting them if they're too long
     parsed_paragraphs = [
             pp
-            for p in paragraphs 
+            for p in textspans
             for pp in _process_paragraph(p, max_len)
             ]
     # link paragraphs together so each chunk text is between soft_min_len and max_len long (as best as possible)
     packed_paragraphs = _pack_paragraphs(parsed_paragraphs, soft_min_len, max_len)
+
     return packed_paragraphs
 
 # -------------------------------------- Helper methods ------------------------------------------
-def _process_paragraph(paragraph: str, max_len: int) -> list[str]:
+def _process_paragraph(paragraph: TextSpan, max_len: int) -> list[TextSpan]:
     """ Split long paragraphs into sections of length max_len """
-    paragraph = paragraph.strip()
-    if len(paragraph) <= max_len:
+    if len(paragraph.text) <= max_len:
         return [paragraph]
    
     return [
-            paragraph[i : i + max_len]
-            for i in range(0, len(paragraph), max_len)
+            TextSpan(
+                paragraph.text[i : i + max_len],
+                paragraph.start + i,
+                paragraph.start + min(i+max_len, len(paragraph.text))
+            )
+            for i in range(0, len(paragraph.text), max_len)
         ]
 
-def _pack_paragraphs(paragraphs: list[str], soft_min_len: int, max_len: int) -> list[str]:
+def _pack_paragraphs(paragraphs: list[TextSpan], soft_min_len: int, max_len: int) -> list[TextSpan]:
     """
     Squeeze together paragraphs in an ordered list so that most elements of the list 
     have a length between min_len and max_len while maintaining the order of the strings.
@@ -122,15 +160,19 @@ def _pack_paragraphs(paragraphs: list[str], soft_min_len: int, max_len: int) -> 
     # loop backward over paragraphs, adding paragraphs together as necessary
     i = len(paragraphs) - 1
     while i > 0:
-        n = len(paragraphs[i])
+        n = len(paragraphs[i].text)
         if n >= soft_min_len and n <= max_len:
             packed_paragraphs.append(paragraphs[i])
         elif n < soft_min_len:
-            candidate = paragraphs[i-1] + "\n\n" + paragraphs[i]
+            candidate = paragraphs[i-1].text + "\n\n" + paragraphs[i].text
             if len(candidate) > max_len:
-                packed_paragraphs.append(paragraphs[i]) # allows a paragraph smaller than soft_min_len to pass through
+                packed_paragraphs.append(paragraphs[i]) # NOTE: allows a paragraph smaller than soft_min_len to pass through
             else:
-                paragraphs[i-1] = candidate
+                paragraphs[i-1] = TextSpan(
+                        candidate,
+                        paragraphs[i-1].start,
+                        paragraphs[i].end # don't add 2 because candidate is embedded txt not source text
+                    )
         # no need for n > max_len check because of assumption (see Notes)
         paragraphs.pop()
         i -= 1
@@ -147,6 +189,8 @@ def _sentence_splitter(paragraph: str, max_len: int) -> list[str]:
     
     Note: A sentence like `Dr. Smith studied` is not parsed properly due to
     the splitting at '. '.
+
+    This is currently unused.
     """
     # if paragraph is smaller than max_len, don't split; return full paragraph
     if len(paragraph.strip()) <= max_len:
@@ -180,9 +224,9 @@ def _sentence_splitter(paragraph: str, max_len: int) -> list[str]:
 CHUNK_METHODS = {
         "smart_paragraphs" : chunk_by_paragraphs_smart,
         "fullnote" : chunk_by_fullnote,
-        "paragaphs": chunk_by_paragraphs,
+        "paragraphs": chunk_by_paragraphs,
         "token_number": chunk_by_token_number,
-        "ai": chunk_by_AI_summary,
+        "llm": chunk_by_AI_summary,
     }
 
 

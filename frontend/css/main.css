@@ -8,5 +8,5 @@
 @import "modals.css";
 @import "notes.css";
 @import "cluster.css";
-/* @import "settings.css"; */
+@import "settings.css"; 
 @import "utilities.css";

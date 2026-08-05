@@ -6,7 +6,9 @@ import { renderSearchResults, renderFullSearchResult } from "../render/search.js
 import { openModal } from "../ui/modals.js";
 
 const onSearchResultClick = (searchResult) => {
-    openModal(searchResult, renderFullSearchResult);
+    openModal(searchResult, 
+        (data, container) => renderFullSearchResult(data, container, 3)
+    );
 };
 
 export function setupSearchEvents( resultsContainer ) {

@@ -45,5 +45,7 @@
     margin: 1rem;
     margin-top: 2rem;
     text-align: left;
-}
 
+    overflow-y: auto;
+    white-space: pre-wrap;
+}

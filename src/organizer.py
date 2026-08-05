@@ -86,9 +86,10 @@ class BrainOrganizer:
             cls,
             directory: str,
             model_name: str="sentence-transformers/all-MiniLM-L6-v2",
-            metric='cosine',
-            chunk_method='smart_paragraphs',
-            parser_method='llm'
+            metric: str='cosine',
+            chunk_method: str='smart_paragraphs',
+            parser_method: str='llm',
+            chunker_options: dict={}
         ):
         notes: list[Note] = parser.parse_notes(directory, parser=parser_method)
         brain = cls(model_name=model_name)
@@ -100,8 +101,7 @@ class BrainOrganizer:
         chunks: list[Chunk] = chunking.chunk_notes(
                 notes,
                 chunk_func=chunk_method,
-                include_context=False, 
-                soft_min_len=300, max_len=1500
+                **chunker_options
                 )
         brain.chunks = chunks
 

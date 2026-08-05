@@ -3,7 +3,6 @@
 const modalContainer = document.getElementById("modal");
 const modalContent = document.getElementById("modal-content");
 
-// TODO: Use this const settingsContainer = document.getElementById("settings-modal");
 
 export const openModal = (data, renderer) => {
     modalContainer.classList.remove("hidden");
@@ -13,3 +12,4 @@ export const openModal = (data, renderer) => {
 export const closeModal = () => {
     modalContainer.classList.add("hidden");
 };
+
