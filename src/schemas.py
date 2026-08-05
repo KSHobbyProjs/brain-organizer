@@ -1,6 +1,10 @@
 # dto module for converting backend objects to frontfacing objects
 
 from dataclasses import dataclass
+import networkx as nx
+import json
+from .utils import numpy_to_python
+
 # only for type hints
 from .organizer import QueryResult, ClusterResult
 from .models import Chunk, Note
@@ -82,3 +86,7 @@ def _get_unique_notes(chunks: list[Chunk], notes: list[Note]) -> list[Response]:
                 span=chunk.span
             ) )
     return list(responses.values())
+
+def graph_to_response(graph: nx.Graph) -> dict:
+    data = nx.cytoscape_data(graph)
+    return numpy_to_python(data)

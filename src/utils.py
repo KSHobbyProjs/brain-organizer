@@ -2,8 +2,8 @@
 # util methods shared by many classes
 
 """
-These functions are no longer used throughout the program. sklearn already has methods which
-circumvent the need for these methods.
+Apart from numpy_to_python, these functions are no longer used throughout the program. 
+sklearn already has methods which circumvent the need for these methods.
 
 These are kept here for posterity.
 """
@@ -98,3 +98,26 @@ def compute_centroid(embeddings: np.ndarray) -> np.ndarray:
         Centroid of embeddings. Shape (n_features,)
     """
     return np.mean(embeddings, axis=0)
+
+def numpy_to_python(obj): 
+    """ 
+    Recursively move through obj and convert all
+    numpy types to python-native types
+    """
+    if isinstance(obj, np.generic):
+        # np.float32, np.float64, np.int32, np.bool_, etc.
+        return obj.item()
+
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+
+    if isinstance(obj, dict):
+        return {k: numpy_to_python(v) for k, v in obj.items()}
+
+    if isinstance(obj, list):
+        return [numpy_to_python(v) for v in obj]
+
+    if isinstance(obj, tuple):
+        return tuple(numpy_to_python(v) for v in obj)
+
+    return obj

@@ -1,12 +1,25 @@
 # Brain Organizer
-This project is designed to embed personal notes (right now, only Google Keep notes imported with Google Takeover work) with sentence transformers, and perform analysis on this data.
+### still developing
+<img src="docs/cover.png" width=900>
+Semantic search and visualization tool for personal notes. Uses sentence-transformer embeddings to convert notes into a semantic vector space, allowing notes to be searched, clustered, and visualized based on meaning rather than exact text.
 
-Currently, the following actions may be performed:
- - **Semantic Search**: search for the notes that most closely align with a query search.
- - **Clustering**: cluster the notes into categories based on semantic similarity.  
- - **Visualization**: visualize clusters in 2D or 3D.
- - **Timeline**: produces a histogram of notes taken in time.
+Currently, Google Keep notes exported through Google Takeout are supported. A set of sample notes can be found in `tests/llm`.
 
+Includes:
+- a command-line interface for analysis and troubleshooting
+- a web-based GUI for interactive 
+
+---
+## Tools
+### Semantic Search
+Search notes by meaning. Example: > "music theory" can retrieve notes with topics related to music theory.
+
+### Clustering
+Group notes into semantic categories.
+
+### Interactive Visualization
+Visualize notes in an interactive graph with Cytoscape.
+<img src="docs/gui.png" width=900>
 ---
 
 ## Install
@@ -16,35 +29,29 @@ git clone https://github.com/KSHobbyProjs/brain-organizer.git
 cd brain-organizer
 pip install -r requirements.txt
 ```
-Dependencies include `numpy`, `scipy`, `scikit`, `sentence-transformers`, `torch`, `cuda` (preferably), etc.
+Dependencies include `numpy`, `scipy`, `scikit`, `sentence-transformers`, `torch`, etc. A CUDA-enabled GPU is recommended for embedding large collections of notes.
 
 ---
 
 ## Usage
-- Unzip Google Keep notes exported with Google Takeover
-- Run `python main.py path/to/keepnotes`
+- A sample set of notes can be found in `tests/llm`. When loading, select `llm` as the parser method.
+### GUI
+- Start the server with `./run.py` or `python run.py`
+- Open `http://localhost:8000`
+- Click the load notes button to import local notes.
+
+### Command Line
+- Run `./cli.py path/to/keepnotes` or `python cli.py path/to/keepnotes` without any extra commands to enter the REPL
+- Type a search query in terminal to search for the top 5 notes. Example: `brain> nihilism` will output the top 5 notes best matching "nihilism" in content.
+- `:open 5` will open the fifth note output from the search result.
+- `:cluster 5` will cluster the notes into 5 categories and output to the terminal.
+- `:visualize-graph` will send a semantic graph of the notes to Cytoscape (if open).
+- `:help` prints additional commands.
 - Possible command arguments include:
     -  `--query "foo bar"`: searches notes for notes with content best matching "foo bar" and displays the top 5 in terminal.
     - `--cluster 5`       : uses KMeans to produce 5 clusters out of the data and displays three notes in each sector in terminal.
     - `--visualize`       : produces a plot of the embedded notes in 2D / 3D with highlighted clusters.
     - `--timeline`        : produces a histogram of note creation over time.
-    - ...
-- If run without any command arguments, runs a REPL where the natural mode accepts queries and prints the top notes matching that query, and other functions are available with commands of the style: `:cluster 5`.
 ---
 
-### Milestones
-- [x] Milestone 1: Google Takeout -> JSON
-- [x] Milestone 2: JSON -> embeddings
-- [x] Milestone 3: semantic search
-- [x] Milestone 4: organizer + CLI
-- [x] Milestone 5: embeddings -> clusters
-- [x] Milestone 6: clusters -> visualization
-- [x] Milestone 7: timeline
-- [x] Milestone 8: graphs
-- [x] Milestone 9: visualizing graphs with Cytoscape
-- [X] Milestone 10: finish graph and cluster statistics
-- [] Milestone 11: GUI
-    - [] Milestone 11.1: FastAPI to get all notes
-    - [] Milestone 11.2: 
-- [] Milestone 12: LLM topic recognition and summaries
-- [] Milestone 13: documentation
+

@@ -9,7 +9,6 @@ export function setupGraphEvents( resultsContainer ) {
 
     graphButton.onclick = async () => {
         const graphData = await graphNotes();
-        console.log(graphData);
         
         setMode("graph-mode");
         

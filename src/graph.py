@@ -171,22 +171,3 @@ class SemanticGraphBuilder:
     def get_betweeness_centrality(self):
         pass
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

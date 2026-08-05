@@ -1,6 +1,7 @@
 /* settings.js */
 
 import { loadSettings } from "../api.js";
+import { appState, updateUI } from "../state.js";
 
 const chunker = document.getElementById("chunker");
 
@@ -73,9 +74,25 @@ export function setupSettingsEvents() {
         event.preventDefault();
 
         const settings = getSettings();
-        
-        const response = await loadSettings(settings);
         settingsModal.classList.add("hidden");
-        console.log(response)
+        
+        appState.loading = true;
+        updateUI();
+
+        try {
+            const response = await loadSettings(settings);
+
+            appState.loaded = true;
+            console.log(response)
+
+        } catch (error) {
+            console.log(error);
+            appState.error = error;
+            updateUI();
+            
+        } finally {
+            appState.loading = false;
+            updateUI();
+        }
     }); 
 }

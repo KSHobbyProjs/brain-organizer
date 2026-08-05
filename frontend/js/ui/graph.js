@@ -1,51 +1,44 @@
 /* ui/graph.js */
 import cytoscape from "../cytoscape.esm.min.mjs";
 
+/* colors for graphing nodes and edges */
+const root = getComputedStyle(document.documentElement);
+const nodeColor = root.getPropertyValue("--accent-color");
+const edgeColor = root.getPropertyValue("--text-primary");
+
+
 let cy = null;
 
 export function initializeGraph(graphData, container) {
     container.innerHTML = "";
-
     cy = cytoscape({
-        
+     
         container: container,
 
-        elements: [
-            {
-                data: {id: 'a'}
-            },
-            {
-                data: {id: 'b'}
-            },
-            {
-                data: {id: 'c'}
-            }
-        ],
+        elements: graphData.elements,
 
         style: [
             {
                 selector: 'node',
                 style: {
-                    'background-color': '#ffd1d1', 
-                    'label': 'data(id)'
+                    'background-color': nodeColor, 
+                    'border-color': edgeColor,
                 }
             },
             {
                 selector: 'edge',
                 style: {
                     'width': 3,
-                    'line-color': '#ebc06a',
-                    'target-arrow-color': '#ebc06a',
-                    'target-arrow-shape': 'triangle',
+                    'line-color': edgeColor,
                     'curve-style': 'bezier'
                 }
             }
         ],
 
         layout: {
-            name: 'grid',
-            rows: 1
+            name: 'cose',
         }
+   
     });
 }
 

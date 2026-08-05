@@ -3,7 +3,7 @@
 import datetime
 
 from src.organizer import BrainOrganizer
-from src.schemas import query_results_to_response, cluster_results_to_response
+from src.schemas import query_results_to_response, cluster_results_to_response, graph_to_response
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
@@ -98,6 +98,4 @@ def load_notes(settings: LoadSettings):
 def graph_notes():
     brain = require_brain()
     graph = brain.create_graph('mutual-knn')
-    # TODO: create scheme to convert networkx -> cytoscape -> json
-    # TODO: allow settings for type of graph
-    return {"status": "ok"}
+    return graph_to_response(graph)
