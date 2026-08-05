@@ -1,6 +1,6 @@
 # Brain Organizer
 (Still developing)
-<img src="docs/cover.png" width=900>
+<img src="docs/cover.png" width=900><br>
 Semantic search and visualization tool for personal notes. Uses sentence-transformer embeddings to convert notes into a semantic vector space, allowing notes to be searched, clustered, and visualized based on meaning rather than exact text.
 
 Currently, Google Keep notes exported through Google Takeout are supported. A set of sample notes can be found in `tests/llm`.
@@ -19,7 +19,7 @@ Group notes into semantic categories.
 
 ### Interactive Visualization
 Visualize notes in an interactive graph with Cytoscape.
-<img src="docs/gui.png" width=900>
+<img src="docs/graph.png" width=900><br>
 ---
 
 ## Install
