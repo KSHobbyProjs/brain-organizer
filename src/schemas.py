@@ -89,4 +89,10 @@ def _get_unique_notes(chunks: list[Chunk], notes: list[Note]) -> list[Response]:
 
 def graph_to_response(graph: nx.Graph) -> dict:
     data = nx.cytoscape_data(graph)
+    pos = nx.spring_layout(
+            data,
+            weight="weight",
+            iterations=100,
+            seed=42
+        )
     return numpy_to_python(data)
