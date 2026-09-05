@@ -271,7 +271,7 @@ def main():
     parser.add_argument('-g', '--graph', type=str)
     
     args = parser.parse_args()
-    brain = BrainOrganizer.from_directory(args.directory, model_name=args.model_name, parser_method='keep')
+    brain = BrainOrganizer.from_directory(args.directory, model_name=args.model_name, parser_method='llm')
     brain_cli = BrainCLI(brain, args.top_k)
 
     # treat the brain as its own interactive model, 

@@ -36,7 +36,7 @@ export function initializeGraph(graphData, container) {
         ],
 
         layout: {
-            name: 'cose',
+            name: 'preset',
         }
    
     });
